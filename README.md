@@ -22,7 +22,7 @@ SchemQl is ideal for developers who appreciate the power of raw SQL but want add
 This library relies solely on [Zod](https://github.com/colinhacks/zod), though future development could include support for [@effect/schema](https://effect.website/docs/guides/schema/getting-started) as well.
 
 
-![image](https://github.com/user-attachments/assets/c0b73fc3-7df0-4da0-ae56-4d27e195efc8)
+![image](https://github.com/user-attachments/assets/02d38804-0a3c-402d-a7c0-01225c56654b)
 
 
 
