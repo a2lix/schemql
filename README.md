@@ -157,6 +157,35 @@ const allUsersPaginated = await schemQl.all({
   ORDER BY ${'@users.id'} ${s.sqlCond(data.query.dir === 'prev', 'DESC', 'ASC')}
   LIMIT ${':limit'}
 `)
+
+// Automatically stringify JSON params 'metadata' (by schemQl if enabled)
+// and get parsed JSON metadata, as well (if Zod preprocess set rightly)
+const firstSession = await schemQl.firstOrThrow({
+  params: {
+    id: uuidv4(),
+    user_id: 'uuid-1',
+    metadata: {
+      account: 'credentials',
+    },
+    expiresAtAdd: 10000,
+  },
+  paramsSchema: z.object({
+    ...zSessionDb.pick({ id: true, user_id: true, metadata: true }).shape,
+    expiresAtAdd: z.number().int(),
+  }),
+  resultSchema: zSessionDb,
+})((s) => s.sql`
+  INSERT INTO
+    ${{ sessions: ['id', 'user_id', 'metadata', 'expires_at'] }}
+  VALUES
+    (
+      ${':id'}
+      , ${':user_id'}
+      , json(${':metadata'})
+      , strftime('%s', 'now') + ${':expiresAtAdd'}
+    )
+  RETURNING *
+`)
 ```
 </details>
 
