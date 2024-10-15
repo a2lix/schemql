@@ -1,0 +1,84 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.3/schema.json",
+  "formatter": {
+    "useEditorconfig": true,
+    "formatWithErrors": true,
+    "indentStyle": "space",
+    "lineWidth": 120
+  },
+  "linter": {
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "noUselessUndefinedInitialization": "error",
+        "noBannedTypes": "off"
+      },
+      "correctness": {
+        "noUnusedImports": "error",
+        "noUnusedPrivateClassMembers": "error",
+        "noUnusedVariables": "error",
+        "useHookAtTopLevel": "error"
+      },
+      "nursery": {
+        "noDuplicateCustomProperties": "error",
+        "noDynamicNamespaceImportAccess": "error",
+        "noIrregularWhitespace": "error",
+        "noUselessEscapeInRegex": "error",
+        "useTrimStartEnd": "error",
+        "noDuplicateElseIf": "error"
+      },
+      "style": {
+        "noYodaExpression": "error",
+        "useThrowOnlyError": "error",
+        "noNonNullAssertion": "warn",
+        "useBlockStatements": "error",
+        "useCollapsedElseIf": "error",
+        "useFilenamingConvention": "error",
+        "useForOf": "error",
+        "useFragmentSyntax": "error",
+        "useNamingConvention": {
+          "level": "warn",
+          "options": {
+            "strictCase": false,
+            "conventions": [
+              {
+                "selector": {
+                  "kind": "objectLiteralMember"
+                },
+                "formats": ["camelCase", "snake_case"]
+              }
+            ]
+          }
+        },
+        "useShorthandArrayType": "error",
+        "useShorthandAssign": "error",
+        "useSingleCaseStatement": "error"
+      },
+      "suspicious": {
+        "noDuplicateAtImportRules": "error",
+        "noEmptyBlock": "error",
+        "useErrorMessage": "error",
+        "useAwait": "error"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "trailingCommas": "es5",
+      "semicolons": "asNeeded"
+    }
+  },
+  "json": {
+    "formatter": {
+      "trailingCommas": "none"
+    }
+  },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git"
+  },
+  "files": {
+    "ignoreUnknown": true
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    /* https://www.totaltypescript.com/tsconfig-cheat-sheet */
+    /* Base Options: */
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "ESNext",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    /* Strictness */
+    "strict": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "noUncheckedSideEffectImports": true,
+    "module": "preserve",
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"],
+    }
+  },
+}
