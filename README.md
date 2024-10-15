@@ -22,7 +22,7 @@ SchemQl is ideal for developers who appreciate the power of raw SQL but want add
 This library relies solely on [Zod](https://github.com/colinhacks/zod), though future development could include support for [@effect/schema](https://effect.website/docs/guides/schema/getting-started) as well.
 
 
-![image](https://github.com/user-attachments/assets/02d38804-0a3c-402d-a7c0-01225c56654b)
+![image](https://github.com/user-attachments/assets/f7ba64eb-87fc-43ab-a4ab-938752e56029)
 
 
 
@@ -195,8 +195,8 @@ const firstSession = await schemQl.firstOrThrow({
 
 ## Literal String SQL Helpers
 
-| Helper Syntax                   | Raw SQL Result         | Description                                      |
-|--------------------------------:|-----------------------:|--------------------------------------------------|
+| Helper Syntax                   | Raw SQL Result         | Description |
+|:---                             | :---:                  | :---        |
 | ${'@table1'}                    | table1                 | Prefix `@` eases table selection/validation |
 | ${'@table1.col1'}               | table1.col1            | ... and column selection/validation |
 | ${'@table1.col1-'}              | col1                   | ... ending `-` excludes the table name (Useful when table renamed) |
