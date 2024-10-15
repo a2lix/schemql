@@ -1,16 +1,21 @@
+[![npm version](https://img.shields.io/npm/v/@a2lix/schemql.svg)](https://www.npmjs.com/package/@a2lix/schemql)
+[![npm downloads](https://img.shields.io/npm/dt/@a2lix/schemql.svg)](https://www.npmjs.com/package/@a2lix/schemql)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![CI](https://github.com/a2lix/schemql/actions/workflows/ci.yml/badge.svg)
+
 # SchemQl
 
-SchemQl is a lightweight TypeScript library that enhances your SQL workflow by combining raw SQL with targeted type safety and schema validation. It offers two main features:
+SchemQl is a lightweight TypeScript library that enhances your SQL workflow by combining raw SQL with targeted type safety and schema validation. It simplifies SQL usage in TypeScript by offering two main features:
 
 - **Robust Query Validation**: Ensures the integrity of your query parameters and results through powerful schema validation, reducing runtime errors and data inconsistencies.
-- **Selective SQL Typing**: Leverages TypeScript to provide real-time autocomplete and validation for specific parts of your SQL queries, focusing on literal string parameters for tables, columns, parameters, and selections.
+- **Selective SQL Typing**: Leverages TypeScript to provide real-time autocomplete and validation for specific parts of your SQL queries, targeting literal string parameters for tables, columns, parameters, and selections.
 
 SchemQl is designed to complement your existing SQL practices, not replace them. It allows you to write raw SQL while benefiting from enhanced safety for specific query elements. Key characteristics include:
 
-- **Database Agnostic**: Works with any database management system (DBMS), allowing you to fully utilize your database's specific features.
-- **SQL-First**: Provides the freedom to write complex SQL queries while offering targeted type safety for literal string parameters.
+- **Database Agnostic**: Works with any database management system (DBMS) that has a compatible JavaScript/TypeScript client library, allowing you to fully leverage your database-specific features.
+- **SQL-First approach**: Provides the freedom to write complex SQL queries while offering targeted type safety for literal string parameters.
 - **Lightweight**: Focused on core features and intends to remain so.
-- **Selectively Type-Safe**: Offers TypeScript support for enhanced developer experience with literal string parameters, balancing flexibility and safety.
+- **Targeted Type Safety**: Offers TypeScript support for enhanced developer experience with literal string parameters, balancing flexibility and safety.
 
 SchemQl is ideal for developers who appreciate the power of raw SQL but want added security and convenience through schema validation and targeted TypeScript integration for specific query elements.
 
@@ -22,7 +27,7 @@ This library relies solely on [Zod](https://github.com/colinhacks/zod), though f
 To install SchemQl, use npm:
 
 ```bash
-npm install schemql
+npm i @a2lix/schemql
 ```
 
 ## Usage
@@ -35,7 +40,7 @@ Here's a basic example of how to use SchemQl:
 ```typescript
 // Advice: use your favorite AI to generate your Zod schema from your SQL
 
-import { parseJsonPreprocessor } from '@/index'
+import { parseJsonPreprocessor } from '@a2lix/schemql'
 import { z } from 'zod'
 
 export const zUserDb = z.object({
@@ -67,7 +72,7 @@ export interface DB {
 
 ```typescript
 // Example with better-sqlite3, but you use your favorite
-
+import { SchemQl } from '@a2lix/schemql'
 import SQLite from 'better-sqlite3'
 import type { DB } from '@/schema'
 
@@ -92,7 +97,7 @@ const schemQl = new SchemQl<DB>({
       return params ? stmt.all(params) : stmt.all()
     }
   },
-  shouldStringifyObjectParams: true,    // Optional. If you use JSON data, you can let SchemQl handle the stringification of your params
+  shouldStringifyObjectParams: true,    // Optional. If you use JSON data, SchemQl can handle parameter stringification automatically
 })
 ```
 </details>
@@ -172,7 +177,8 @@ const allUsersPaginated = await schemQl.all({
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+This library intends to stay lightweight and simple but contributions are welcome!
+Please feel free to submit a Pull Request.
 
 ## License
 
