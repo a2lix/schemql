@@ -17,7 +17,8 @@
         "noUnusedImports": "error",
         "noUnusedPrivateClassMembers": "error",
         "noUnusedVariables": "error",
-        "useHookAtTopLevel": "error"
+        "useHookAtTopLevel": "error",
+        "noConstantCondition": "warn"
       },
       "nursery": {
         "noDuplicateCustomProperties": "error",
@@ -36,20 +37,6 @@
         "useFilenamingConvention": "error",
         "useForOf": "error",
         "useFragmentSyntax": "error",
-        "useNamingConvention": {
-          "level": "warn",
-          "options": {
-            "strictCase": false,
-            "conventions": [
-              {
-                "selector": {
-                  "kind": "objectLiteralMember"
-                },
-                "formats": ["camelCase", "snake_case"]
-              }
-            ]
-          }
-        },
         "useShorthandArrayType": "error",
         "useShorthandAssign": "error",
         "useSingleCaseStatement": "error"
@@ -58,7 +45,8 @@
         "noDuplicateAtImportRules": "error",
         "noEmptyBlock": "error",
         "useErrorMessage": "error",
-        "useAwait": "error"
+        "useAwait": "error",
+        "noExplicitAny": "warn"
       }
     }
   },

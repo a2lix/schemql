@@ -11,7 +11,7 @@ const normalizeString = (str: string) => {
 const schemQlConfigured = new SchemQl<DB>({
   queryFns: {
     all: (sql, params) => {
-      assert.strictEqual(sql, `SELECT * FROM users WHERE id = :id`)
+      assert.strictEqual(sql, 'SELECT * FROM users WHERE id = :id')
       assert.deepEqual(params, {
         id: 'uuid-1',
       })
@@ -50,7 +50,7 @@ describe('SchemQl - global options', () => {
   it('should return the expected result, using override queriesFn if provided', async () => {
     const results = await schemQlConfigured.all({
       queryFn: (sql, params) => {
-        assert.strictEqual(sql, `SELECT * FROM users WHERE id = :id`)
+        assert.strictEqual(sql, 'SELECT * FROM users WHERE id = :id')
         assert.deepEqual(params, {
           id: 'uuid-1',
         })
@@ -90,7 +90,7 @@ const schemQlUnconfigured = new SchemQl<DB>({
 })
 
 describe('SchemQl - queryFn related', () => {
-  it('should throw an error if queryFn is missing', async () => {
+  it('should throw an error if queryFn is missing', () => {
     assert.rejects(
       async () => {
         await schemQlUnconfigured.all({})('SELECT * FROM users')
@@ -104,9 +104,9 @@ describe('SchemQl - queryFn related', () => {
 
   it('should return the expected result with queryFn as a Promise', async () => {
     const results = await schemQlUnconfigured.all({
-      queryFn: async (sql, params) => {
-        assert.strictEqual(sql, `SELECT * FROM users`)
-        return Promise.resolve([
+      queryFn: async (sql, _params) => {
+        assert.strictEqual(sql, 'SELECT * FROM users')
+        return await Promise.resolve([
           {
             id: 'uuid-1',
             email: 'john@doe.com',
@@ -133,8 +133,8 @@ describe('SchemQl - queryFn related', () => {
 describe('SchemQl - resultSchema related', () => {
   it('should return the expected result, parsed by resultSchema if provided', async () => {
     const results = await schemQlUnconfigured.all({
-      queryFn: (sql, params) => {
-        assert.strictEqual(sql, `SELECT * FROM users`)
+      queryFn: (sql, _params) => {
+        assert.strictEqual(sql, 'SELECT * FROM users')
         return [
           {
             id: 'uuid-1',
@@ -164,7 +164,7 @@ describe('SchemQl - paramsSchema related', () => {
   it('should return the expected result, params parsed by paramsSchema if provided', async () => {
     const result = await schemQlUnconfigured.first({
       queryFn: (sql, params) => {
-        assert.strictEqual(sql, `SELECT * FROM users WHERE id = :id`)
+        assert.strictEqual(sql, 'SELECT * FROM users WHERE id = :id')
         assert.deepEqual(params, { id: '1' })
         return {
           id: 'uuid-1',
@@ -347,7 +347,7 @@ describe('SchemQl - sql literal advanced', () => {
         true,
         s.sql`
         WHERE
-          ${'@users.id-'} ${s.sqlRaw('next' === 'next' ? '>' : '<')} ${':cursor'}
+          ${'@users.id-'} ${s.sqlRaw(true ? '>' : '<')} ${':cursor'}
           ${s.sqlCond(true, s.sql`AND ${s.sqlCond(false, '1=1', '0=0')}`)}
       `
       )}

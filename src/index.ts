@@ -65,7 +65,7 @@ type SchemQlOptions = {
 type QueryFns = Record<'first' | 'firstOrThrow' | 'all', QueryFn<unknown, Record<string, any>>>
 type QueryFn<TQueryResult, TParams> = (sql: string, params?: TParams) => TQueryResult | Promise<TQueryResult>
 
-type QueryExecutor<TMethod extends keyof QueryFns, DB> = <
+type QueryExecutor<_TMethod extends keyof QueryFns, DB> = <
   TQueryResult = unknown,
   TParams extends Record<string, any> = Record<string, any>,
   TParamsSchema extends z.ZodTypeAny | undefined = undefined,
