@@ -242,6 +242,42 @@ describe('SchemQl - sql literal', () => {
       length_id: 6,
     })
   })
+
+  it('should return the expected result, undefined case', async () => {
+    const result = await schemQlUnconfigured.first({
+      queryFn: (sql, params) => {
+        assert.strictEqual(
+          sql,
+          normalizeString(`
+            SELECT
+              *,
+              LENGTH(id) AS length_id
+            FROM users
+            WHERE
+              id = :id
+          `)
+        )
+        assert.deepEqual(params, { id: 'uuid-1' })
+        return undefined
+      },
+      resultSchema: zUserDb.and(z.object({ length_id: z.number() })).optional(),
+      params: {
+        id: 'uuid-1',
+      },
+      paramsSchema: zUserDb.pick({ id: true }),
+    })((s) =>
+      normalizeString(s.sql`
+          SELECT
+            *,
+            LENGTH(${'@users.id-'}) AS ${'$length_id'}
+          FROM ${'@users'}
+          WHERE
+            ${'@users.id-'} = ${':id'}
+    `)
+    )
+
+    assert.deepEqual(result, undefined)
+  })
 })
 
 describe('SchemQl - sql literal advanced', () => {
