@@ -36,7 +36,7 @@ type SqlTemplateValue<TResultSchema, TParams, DB> =
   | `@${TableNames<DB>}.*`
   | `@${ValidTableColumnCombinations<DB>}`
   | `@${ValidJsonPathCombinations<DB>}`
-  | `$${keyof ArrayElement<TResultSchema> & string}`
+  | `$${keyof ArrayElement<Exclude<TResultSchema, undefined>> & string}`
   | `:${keyof TParams & string}`
   | `§${string}`
 
