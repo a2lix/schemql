@@ -22,7 +22,7 @@ SchemQl is ideal for developers who appreciate the power of raw SQL but want add
 This library relies solely on [Zod](https://github.com/colinhacks/zod), though future development could include support for [@effect/schema](https://effect.website/docs/guides/schema/getting-started) as well.
 
 
-![image](https://github.com/user-attachments/assets/f7ba64eb-87fc-43ab-a4ab-938752e56029)
+![image psd(1)](https://github.com/user-attachments/assets/737b4bcd-1aed-403c-994b-b9597660f704)
 
 
 
@@ -200,8 +200,9 @@ const firstSession = await schemQl.firstOrThrow({
 | ${'@table1'}                    | table1                 | Prefix `@` eases table selection/validation |
 | ${'@table1.col1'}               | table1.col1            | ... and column selection/validation |
 | ${'@table1.col1-'}              | col1                   | ... ending `-` excludes the table name (Useful when table renamed) |
-| ${"@table1.col1->'json1'"}      | table1.col1->'json1'   | ... similar with JSON field selection |
-| ${"@table1.col1->>'json1'"}     | table1.col1->>'json1'  | ... similar with JSON field selection (raw) |
+| ${"@table1.col1 ->jsonpath1"}   | table1.col1->'jsonpath1'   | ... similar with JSON field selection |
+| ${"@table1.col1 ->>jsonpath1"}  | table1.col1->>'jsonpath1'  | ... similar with JSON field selection (raw) |
+| ${"@table1.col1 $.jsonpath1"}   | '$.jsonpath1'          | ... similar with JSON Path |
 | ${'$resultCol1'}                | resultCol1             | Prefix `$` eases selection/validation of fields expected by the resultSchema |
 | ${':param1'}                    | :param1                | Prefix `:` eases selection/validation of expected params |
 | ${{ table1: ['col1', 'col2'] }} | table1 (col1, col2)    | `object` eases generation of INSERT/UPDATE queries |
