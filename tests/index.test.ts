@@ -251,10 +251,10 @@ describe('SchemQl - sql literal', () => {
           normalizeString(`
             SELECT
               *,
-              LENGTH(id) AS length_id
+              LENGTH(users.id) AS length_id
             FROM users
             WHERE
-              id = :id
+              users.id = :id
           `)
         )
         assert.deepEqual(params, { id: 'uuid-1' })
@@ -269,10 +269,10 @@ describe('SchemQl - sql literal', () => {
       normalizeString(s.sql`
           SELECT
             *,
-            LENGTH(${'@users.id-'}) AS ${'$length_id'}
+            LENGTH(${'@users.id'}) AS ${'$length_id'}
           FROM ${'@users'}
           WHERE
-            ${'@users.id-'} = ${':id'}
+            ${'@users.id'} = ${':id'}
     `)
     )
 
@@ -338,6 +338,67 @@ describe('SchemQl - sql literal advanced', () => {
       disabled_at: null,
     })
   })
+
+  it('should return the expected result - with sql helper', async () => {
+    const result = await schemQlUnconfigured.first({
+      queryFn: (sql, params) => {
+        assert.strictEqual(
+          sql,
+          normalizeString(`
+            UPDATE users
+            SET
+              metadata = json_set(users.metadata,
+                '$.email_variant', :emailVariant,
+                '$.email_verified_at', :emailVerifiedAt
+              )
+            WHERE
+              users.metadata->'role' = :role
+            RETURNING *
+          `)
+        )
+        assert.deepEqual(params, { role: 'admin', emailVariant: 'jane+variant@doe.com', emailVerifiedAt: 1500000000 })
+        return {
+          id: 'uuid-2',
+          email: 'jane@doe.com',
+          metadata: '{"role":"admin","email_variant":"jane+variant@doe.com","email_verified_at":1500000000}',
+          created_at: 1500000000,
+          disabled_at: null,
+        }
+      },
+      resultSchema: zUserDb,
+      params: {
+        role: 'admin',
+        emailVariant: 'jane+variant@doe.com',
+        emailVerifiedAt: 1500000000,
+      },
+      paramsSchema: z.object({ role: z.string(), emailVariant: z.string(), emailVerifiedAt: z.number().int() }),
+    })((s) =>
+      normalizeString(s.sql`
+        UPDATE ${'@users'}
+        SET
+          ${'@users.metadata-'} = json_set(${'@users.metadata'},
+            ${'@users.metadata $.email_variant'}, ${':emailVariant'},
+            ${'@users.metadata $.email_verified_at'}, ${':emailVerifiedAt'}
+          )
+        WHERE
+          ${'@users.metadata ->role'} = ${':role'}
+        RETURNING *
+      `)
+    )
+
+    assert.deepEqual(result, {
+      id: 'uuid-2',
+      email: 'jane@doe.com',
+      metadata: {
+        role: 'admin',
+        email_variant: 'jane+variant@doe.com',
+        email_verified_at: 1500000000,
+      },
+      created_at: 1500000000,
+      disabled_at: null,
+    })
+  })
+
   it('should return the expected result - with sqlCond & sqlRaw helpers', async () => {
     const result = await schemQlUnconfigured.all({
       queryFn: (sql, params) => {

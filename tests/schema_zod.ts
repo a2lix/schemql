@@ -8,6 +8,8 @@ export const zUserDb = z.object({
     parseJsonPreprocessor,
     z.object({
       role: z.enum(['user', 'admin']).default('user'),
+      email_variant: z.string().optional(),
+      email_verified_at: z.number().int().optional(),
     })
   ),
   created_at: z.number().int(),
