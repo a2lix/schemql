@@ -13,17 +13,35 @@ type ValidTableColumnCombinations<DB> = {
   [T in TableNames<DB>]: `${T}.${ColumnNames<DB, T>}` | `${T}.${ColumnNames<DB, T>}-`
 }[TableNames<DB>]
 
-type JsonPathForObject<T, Path extends string = ''> = {
-  [K in keyof T & string]:
-    | `${Path}->'${K}'`
-    | `${Path}->'${K}'-`
-    | `${Path}->>'${K}'`
-    | `${Path}->>'${K}'-`
-    | (T[K] extends object ? JsonPathForObject<T[K], `${Path}->'${K}'`> : never)
-}[keyof T & string]
+type JsonPathForObjectArrow<T, P extends string = ''> = T extends Record<string, any>
+  ? {
+      [K in keyof T & string]:
+        | `${P}->${K}`
+        | `${P}->${K}-`
+        | `${P}->>${K}`
+        | `${P}->>${K}-`
+        | (NonNullable<T[K]> extends Record<string, any>
+            ? `${P}->${K}${JsonPathForObjectArrow<NonNullable<T[K]>, ''>}`
+            : never)
+    }[keyof T & string]
+  : ''
+
+type JsonPathForObjectDot<T, P extends string = ''> = T extends Record<string, any>
+  ? {
+      [K in keyof T & string]:
+        | `${P}.${K}`
+        | (NonNullable<T[K]> extends Record<string, any>
+            ? `${P}.${K}${JsonPathForObjectDot<NonNullable<T[K]>, ''>}`
+            : never)
+    }[keyof T & string]
+  : ''
 
 type JsonPathCombinations<DB, T extends TableNames<DB>> = {
-  [K in ColumnNames<DB, T>]: DB[T][K] extends object ? JsonPathForObject<DB[T][K], `${T}.${K}`> : never
+  [K in ColumnNames<DB, T>]: DB[T][K] extends object
+    ?
+        | JsonPathForObjectArrow<ArrayElement<DB[T][K]>, `${T}.${K} `>
+        | JsonPathForObjectDot<ArrayElement<DB[T][K]>, `${T}.${K} $`>
+    : never
 }[ColumnNames<DB, T>]
 
 type ValidJsonPathCombinations<DB> = {
@@ -163,7 +181,32 @@ export class SchemQl<DB> {
     if (typeof value === 'string') {
       switch (true) {
         case value.startsWith('@'): {
-          return value.endsWith('-') ? (value.split('.')[1]?.slice(0, -1) ?? '') : value.slice(1)
+          // JsonPath dot? Add quotes
+          const jsonPathDotIndex = value.indexOf(' $.')
+          if (jsonPathDotIndex !== -1) {
+            return `'${value.slice(jsonPathDotIndex + 1)}'`
+          }
+
+          let str: string = value
+          // JsonPath arrow? Add quotes
+          const jsonPathArrowIndex = str.indexOf(' ->')
+          if (jsonPathArrowIndex !== -1) {
+            const jsonPathArrow = str
+              .slice(jsonPathArrowIndex + 1)
+              .split(/(?=->)/)
+              .reduce((path, segment) => {
+                const arrow = segment.startsWith('->>') ? '->>' : '->'
+                const value = segment.replace(arrow, '')
+                return `${path}${arrow}'${value}'`
+              }, '')
+            str = `${str.slice(0, jsonPathArrowIndex)}${jsonPathArrow}`
+          }
+
+          if (str.endsWith('-')) {
+            return str.split('.')[1]?.slice(0, -1) ?? ''
+          }
+
+          return str.slice(1)
         }
         case value.startsWith('$'):
         case value.startsWith('§'): // Trick for cond/raw
