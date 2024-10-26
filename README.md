@@ -195,19 +195,19 @@ const firstSession = await schemQl.firstOrThrow({
 
 ## Literal String SQL Helpers
 
-| Helper Syntax                   | Raw SQL Result         | Description |
-|:---                             | :---:                  | :---        |
-| ${'@table1'}                    | table1                 | Prefix `@` eases table selection/validation |
-| ${'@table1.col1'}               | table1.col1            | ... and column selection/validation |
-| ${'@table1.col1-'}              | col1                   | ... ending `-` excludes the table name (Useful when table renamed) |
-| ${"@table1.col1 ->jsonpath1"}   | table1.col1->'jsonpath1'   | ... similar with JSON field selection |
-| ${"@table1.col1 ->>jsonpath1"}  | table1.col1->>'jsonpath1'  | ... similar with JSON field selection (raw) |
-| ${"@table1.col1 $.jsonpath1"}   | '$.jsonpath1'          | ... similar with JSON Path |
-| ${'$resultCol1'}                | resultCol1             | Prefix `$` eases selection/validation of fields expected by the resultSchema |
-| ${':param1'}                    | :param1                | Prefix `:` eases selection/validation of expected params |
-| ${{ table1: ['col1', 'col2'] }} | table1 (col1, col2)    | `object` eases generation of INSERT/UPDATE queries |
-| ${s.sqlCond(1, 'ASC', 'DESC')}  | ASC                    | `s.sqlCond` eases generation of conditional SQL |
-| ${s.sqlRaw(var)}                | var                    | `s.sqlRaw` eases generation of raw SQL |
+| Helper Syntax                     | Raw SQL Result           | Description |
+|:---                               | :---:                    | :---        |
+| `${'@table1'}`                    | `table1`                 | Prefix `@` eases table selection/validation |
+| `${'@table1.col1'}`               | `table1.col1`            | ... and column selection/validation |
+| `${'@table1.col1-'}`              | `col1`                   | ... ending `-` excludes the table name (Useful when table renamed) |
+| `${'@table1.col1 ->jsonpath1'}`   | `table1.col1->'jsonpath1'`   | ... similar with JSON field selection |
+| `${'@table1.col1 ->>jsonpath1'}`  | `table1.col1->>'jsonpath1'`  | ... similar with JSON field selection (raw) |
+| `${'@table1.col1 $.jsonpath1'}`   | `'$.jsonpath1'`          | ... similar with JSON Path |
+| `${'$resultCol1'}`                | `resultCol1`             | Prefix `$` eases selection/validation of fields expected by the resultSchema |
+| `${':param1'}`                    | `:param1`                | Prefix `:` eases selection/validation of expected params |
+| `${{ table1: ['col1', 'col2'] }}` | `table1 (col1, col2)`    | `object` eases generation of INSERT/UPDATE queries |
+| `${s.sqlCond(1, 'ASC', 'DESC')}`  | `ASC`                    | `s.sqlCond` eases generation of conditional SQL |
+| `${s.sqlRaw(var)}`                | `var`                    | `s.sqlRaw` eases generation of raw SQL |
 
 ## Contributing
 
