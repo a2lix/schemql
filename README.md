@@ -5,30 +5,24 @@
 
 # SchemQl
 
-SchemQl is a lightweight TypeScript library that enhances your SQL workflow by combining raw SQL with targeted type safety and schema validation. It simplifies SQL usage in TypeScript by offering two main features:
+**SchemQl** combines the power of raw SQL with TypeScript's type safety, letting you access any DBMS through JavaScript/TypeScript while preventing runtime errors and enhancing autocompletion.
 
-- **Robust Query Validation**: Ensures the integrity of your query parameters and results through powerful schema validation, reducing runtime errors and data inconsistencies.
-- **Selective SQL Typing**: Leverages TypeScript to provide real-time autocomplete and validation for specific parts of your SQL queries, targeting literal string parameters for tables, columns, parameters, and selections.
+**Key features:**
 
-SchemQl is designed to complement your existing SQL practices, not replace them. It allows you to write raw SQL while benefiting from enhanced safety for specific query elements. Key characteristics include:
-
-- **Database Agnostic**: Works with any database management system (DBMS) that has a compatible JavaScript/TypeScript client library, allowing you to fully leverage your database-specific features.
-- **SQL-First approach**: Provides the freedom to write complex SQL queries while offering targeted type safety for literal string parameters.
-- **Lightweight**: Focused on core features and intends to remain so.
-- **Targeted Type Safety**: Offers TypeScript support for enhanced developer experience with literal string parameters, balancing flexibility and safety.
-
-SchemQl is ideal for developers who appreciate the power of raw SQL but want added security and convenience through schema validation and targeted TypeScript integration for specific query elements.
-
-This library relies solely on [Zod](https://github.com/colinhacks/zod), though future development could include support for [@effect/schema](https://effect.website/docs/guides/schema/getting-started) as well.
+- **Database agnostic**: Compatible with any DBMS (e.g. better-sqlite3)
+- **SQL-first**: Write SQL with precise type checks on literals like tables, columns (JSON fields & some JSONPath included), and parameters.
+- **Lightweight**: Focuses on essentials only.
+- **Zod integration**: Optional schema validation (JSON fields include), adds error-proofing and parsing for your SQL params and results.
+- **Targeted Type Safety**: Autocomplete and validate only where it matters.
 
 
-![image psd(1)](https://github.com/user-attachments/assets/737b4bcd-1aed-403c-994b-b9597660f704)
+![Screenshot from 2024-10-29 14-41-05(1)](https://github.com/user-attachments/assets/86b1c3cd-2393-4914-b943-b249d6dad59a)
 
 
 
 ## Installation
 
-To install SchemQl, use npm:
+To install SchemQl, use:
 
 ```bash
 npm i @a2lix/schemql
@@ -42,7 +36,7 @@ Here's a basic example of how to use SchemQl:
 <summary>1. Create your database schema and expose it with a DB interface</summary>
 
 ```typescript
-// Advice: use your favorite AI to generate your Zod schema from your SQL
+// Tips: use your favorite AI to generate your Zod schema from your SQL
 
 import { parseJsonPreprocessor } from '@a2lix/schemql'
 import { z } from 'zod'
@@ -75,7 +69,7 @@ export interface DB {
 <summary>2. Initialize your instance of SchemQl with the DB interface typing</summary>
 
 ```typescript
-// Example with better-sqlite3, but you use your favorite
+// Example with better-sqlite3, but you can use your favorite library
 import { SchemQl } from '@a2lix/schemql'
 import SQLite from 'better-sqlite3'
 import type { DB } from '@/schema'
@@ -101,7 +95,7 @@ const schemQl = new SchemQl<DB>({
       return params ? stmt.all(params) : stmt.all()
     }
   },
-  shouldStringifyObjectParams: true,    // Optional. If you use JSON data, SchemQl can handle parameter stringification automatically
+  shouldStringifyObjectParams: true,   // Optional. Automatically stringify objects (useful for JSON)
 })
 ```
 </details>
@@ -195,24 +189,26 @@ const firstSession = await schemQl.firstOrThrow({
 
 ## Literal String SQL Helpers
 
-| Helper Syntax                     | Raw SQL Result           | Description |
-|:---                               | :---:                    | :---        |
-| `${'@table1'}`                    | `table1`                 | Prefix `@` eases table selection/validation |
-| `${'@table1.col1'}`               | `table1.col1`            | ... and column selection/validation |
-| `${'@table1.col1-'}`              | `col1`                   | ... ending `-` excludes the table name (Useful when table renamed) |
-| `${'@table1.col1 ->jsonpath1'}`   | `table1.col1->'jsonpath1'`   | ... similar with JSON field selection |
-| `${'@table1.col1 ->>jsonpath1'}`  | `table1.col1->>'jsonpath1'`  | ... similar with JSON field selection (raw) |
-| `${'@table1.col1 $.jsonpath1'}`   | `'$.jsonpath1'`          | ... similar with JSON Path |
-| `${'$resultCol1'}`                | `resultCol1`             | Prefix `$` eases selection/validation of fields expected by the resultSchema |
-| `${':param1'}`                    | `:param1`                | Prefix `:` eases selection/validation of expected params |
-| `${{ table1: ['col1', 'col2'] }}` | `table1 (col1, col2)`    | `object` eases generation of INSERT/UPDATE queries |
-| `${s.sqlCond(1, 'ASC', 'DESC')}`  | `ASC`                    | `s.sqlCond` eases generation of conditional SQL |
-| `${s.sqlRaw(var)}`                | `var`                    | `s.sqlRaw` eases generation of raw SQL |
+| **Helper Syntax**                  | **Raw SQL Result**           | **Description** |
+|:-----------------------------------|:-----------------------------|:----------------|
+| `${'@table1'}`                     | `table1`                     | **Table Selection**: Prefix `@` eases table selection/validation |
+| `${'@table1.col1'}`                | `table1.col1`                | **Column Selection**: Use `@` for table and column validation |
+| `${'@table1.col1-'}`               | `col1`                       | Final `-` excludes table name (useful if table is aliased) |
+| `${'@table1.col1 ->jsonpath1'}`    | `table1.col1->'jsonpath1'`   | **JSON Field Selection**: Use `->` for JSON paths |
+| `${'@table1.col1 ->>jsonpath1'}`   | `table1.col1->>'jsonpath1'`  | JSON field (raw) with `->>` syntax |
+| `${'@table1.col1 $.jsonpath1'}`    | `'$.jsonpath1'`              | JSONPath with `$` prefix |
+| `${'$resultCol1'}`                 | `resultCol1`                 | **Result Selection**: `$` prefix targets resultSchema fields |
+| `${':param1'}`                     | `:param1`                    | **Parameter Selection**: `:` prefix eases parameter validation |
+| `${{ table1: ['col1', 'col2'] }}`  | `table1 (col1, col2)`        | **Batch Column Selection**: Object syntax useful for INSERT |
+| `${s.sqlCond(1, 'ASC', 'DESC')}`   | `ASC`                        | **Conditional SQL**: `s.sqlCond` for conditional clauses |
+| `${s.sqlRaw(var)}`                 | `var`                        | **Raw SQL**: Use `s.sqlRaw` for unprocessed SQL fragments |
+
 
 ## Contributing
 
-This library intends to stay lightweight and simple but contributions are welcome!
-Please feel free to submit a Pull Request.
+Contributions are welcome! This library aims to remain lightweight and focused, so please keep PRs concise and aligned with this goal.
+
+This library relies solely on [Zod](https://github.com/colinhacks/zod), but it could also include support for other schema libraries, such as [@effect/schema](https://effect.website/docs/guides/schema/getting-started).
 
 ## License
 
