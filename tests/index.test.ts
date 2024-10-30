@@ -9,7 +9,8 @@ const normalizeString = (str: string) => {
 }
 
 const fixtureUsers = new Map([
-  ['uuid-1',
+  [
+    'uuid-1',
     {
       id: 'uuid-1',
       email: 'john@doe.com',
@@ -17,7 +18,8 @@ const fixtureUsers = new Map([
       created_at: 1500000000,
       disabled_at: null,
     },
-  ],[
+  ],
+  [
     'uuid-2',
     {
       id: 'uuid-2',
@@ -26,7 +28,7 @@ const fixtureUsers = new Map([
       created_at: 1500000000,
       disabled_at: null,
     },
-  ]
+  ],
 ])
 
 const schemQlConfigured = new SchemQl<DB>({
@@ -53,9 +55,7 @@ describe('SchemQl - global options', () => {
           id: 'uuid-1',
         })
         return {
-          rows: [
-            fixtureUsers.get('uuid-1')
-          ],
+          rows: [fixtureUsers.get('uuid-1')],
         }
       },
       params: {
@@ -64,9 +64,7 @@ describe('SchemQl - global options', () => {
     })('SELECT * FROM users WHERE id = :id')
 
     assert.deepEqual(results, {
-      rows: [
-        fixtureUsers.get('uuid-1')
-      ],
+      rows: [fixtureUsers.get('uuid-1')],
     })
   })
 })
@@ -92,8 +90,7 @@ describe('SchemQl - queryFn related', () => {
     const results = await schemQlUnconfigured.all({
       queryFn: (sql) => async (params) => {
         assert.strictEqual(sql, 'SELECT * FROM users')
-        return await Promise.resolve(
-          fixtureUsers.values().toArray())
+        return await Promise.resolve(fixtureUsers.values().toArray())
       },
     })('SELECT * FROM users')
 
@@ -114,15 +111,17 @@ describe('SchemQl - queryFn related', () => {
           id: 'uuid-2',
         },
       ],
-      paramsSchema: zUserDb.pick({id: true}).array(),
-    })((s) => normalizeString(s.sql`
+      paramsSchema: zUserDb.pick({ id: true }).array(),
+    })((s) =>
+      normalizeString(s.sql`
       SELECT *
       FROM ${'@users'}
       WHERE
         ${'@users.id'} = ${':id'}
-    `))
+    `)
+    )
 
-    let all = []
+    const all = []
     for await (const result of iterResults) {
       all.push(result)
     }
@@ -139,15 +138,17 @@ describe('SchemQl - queryFn related', () => {
         yield { id: 'uuid-1' }
         yield { id: 'uuid-2' }
       },
-      paramsSchema: zUserDb.pick({id: true}),
-    })((s) => normalizeString(s.sql`
+      paramsSchema: zUserDb.pick({ id: true }),
+    })((s) =>
+      normalizeString(s.sql`
       SELECT *
       FROM ${'@users'}
       WHERE
         ${'@users.id'} = ${':id'}
-    `))
+    `)
+    )
 
-    let all = []
+    const all = []
     for await (const result of iterResults) {
       all.push(result)
     }
@@ -156,17 +157,20 @@ describe('SchemQl - queryFn related', () => {
 
   it('should return the expected result with iterate method', async () => {
     const iterResults = await schemQlUnconfigured.iterate({
-      queryFn: (sql) => async function* (params) {
-        assert.strictEqual(sql, 'SELECT * FROM users')
-        yield fixtureUsers.get('uuid-1')
-        yield fixtureUsers.get('uuid-2')
-      },
-    })((s) => normalizeString(s.sql`
+      queryFn: (sql) =>
+        async function* (params) {
+          assert.strictEqual(sql, 'SELECT * FROM users')
+          yield fixtureUsers.get('uuid-1')
+          yield fixtureUsers.get('uuid-2')
+        },
+    })((s) =>
+      normalizeString(s.sql`
       SELECT *
       FROM ${'@users'}
-    `))
+    `)
+    )
 
-    let all = []
+    const all = []
     for await (const result of iterResults) {
       all.push(result)
     }
@@ -179,22 +183,7 @@ describe('SchemQl - resultSchema related', () => {
     const results = await schemQlUnconfigured.all({
       queryFn: (sql) => (params) => {
         assert.strictEqual(sql, 'SELECT * FROM users')
-        return [
-          {
-            id: 'uuid-1',
-            email: 'john@doe.com',
-            metadata: '{}',
-            created_at: 1500000000,
-            disabled_at: null,
-          },
-          {
-            id: 'uuid-2',
-            email: 'jane@doe.com',
-            metadata: '{}',
-            created_at: 1500000000,
-            disabled_at: null,
-          },
-        ]
+        return fixtureUsers.values().toArray()
       },
       resultSchema: zUserDb.array(),
     })('SELECT * FROM users')
@@ -344,10 +333,10 @@ describe('SchemQl - sql literal advanced', () => {
             RETURNING *
           `)
         )
-        assert.deepEqual(params, { id: 'uuid-2', email: 'jane@doe.com', metadata: '{"role":"admin"}' })
+        assert.deepEqual(params, { id: 'uuid-3', email: 'joke@doe.com', metadata: '{"role":"admin"}' })
         return {
-          id: 'uuid-2',
-          email: 'jane@doe.com',
+          id: 'uuid-3',
+          email: 'joke@doe.com',
           metadata: '{"role":"admin"}',
           created_at: 1500000000,
           disabled_at: null,
@@ -355,8 +344,8 @@ describe('SchemQl - sql literal advanced', () => {
       },
       resultSchema: zUserDb,
       params: {
-        id: 'uuid-2',
-        email: 'jane@doe.com',
+        id: 'uuid-3',
+        email: 'joke@doe.com',
         metadata: { role: 'admin' },
       },
       paramsSchema: zUserDb.pick({ id: true, email: true, metadata: true }),
@@ -375,8 +364,8 @@ describe('SchemQl - sql literal advanced', () => {
     )
 
     assert.deepEqual(result, {
-      id: 'uuid-2',
-      email: 'jane@doe.com',
+      id: 'uuid-3',
+      email: 'joke@doe.com',
       metadata: {
         role: 'admin',
       },
