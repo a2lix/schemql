@@ -2,9 +2,10 @@ import type { z } from 'zod'
 
 // Helpers
 type ArrayElement<T> = T extends (infer U)[] ? U : T
+type AsyncGeneratorFn<T> = () => AsyncGenerator<T, void, unknown>
 type IsAsyncIterable<T> = T extends AsyncIterable<any> ? true : false
 type IsArray<T> = T extends Array<any> ? true : false
-type ElementType<T> = T extends (infer U)[] ? U : T extends AsyncIterable<infer U> ? U : T
+type ElementType<T> = T extends (infer U)[] ? U : T extends AsyncGeneratorFn<infer U> ? U : T
 type ShouldBeIterable<TMethod extends keyof QueryFns, TParams> = TMethod extends 'iterate'
   ? true
   : IsArray<TParams> extends true
@@ -91,7 +92,7 @@ type SchemQlOptions = {
   shouldStringifyObjectParams?: boolean
 }
 
-type QueryExecutorParams = Record<string, any> | Record<string, any>[] | AsyncIterable<Record<string, any>>
+type QueryExecutorParams = Record<string, any> | Record<string, any>[] | AsyncGeneratorFn<Record<string, any>>
 
 type QueryFns = Record<'first' | 'firstOrThrow' | 'all', QueryFn<unknown>> & {
   iterate: IterativeQueryFn<unknown>
@@ -163,24 +164,9 @@ export class SchemQl<DB> {
         throw new Error(`No queryFn provided for method ${method}`)
       }
 
-      // Iterable params? Iterate results
-      if (Array.isArray(options.params) || isAsyncIterable(options.params)) {
+      // Iterable params?
+      if (typeof options.params === 'function') {
         const preparedQuery = await queryFn(sql)
-
-        if (Array.isArray(options.params)) {
-          const parsedParams = this.parseAndStringifyParams(options)
-
-          const executeAndParseResult = async (params: Record<string, any>) => {
-            const result = await preparedQuery(params)
-            return options.resultSchema?.parse(result) ?? result
-          }
-
-          return (async function* () {
-            for await (const params of parsedParams as Record<string, any>[]) {
-              yield await executeAndParseResult(params)
-            }
-          })()
-        }
 
         const executeAndParseResult = async (params: Record<string, any>) => {
           const parsedParams = this.parseAndStringifyParams({ ...options, params } as SchemQlExecOptions<TQueryResult>)
@@ -189,7 +175,24 @@ export class SchemQl<DB> {
         }
 
         return (async function* () {
-          for await (const params of options.params as AsyncIterable<Record<string, any>>) {
+          for await (const params of (options.params as AsyncGeneratorFn<Record<string, any>>)()) {
+            yield await executeAndParseResult(params)
+          }
+        })()
+      }
+
+      // Array params?
+      if (Array.isArray(options.params)) {
+        const preparedQuery = await queryFn(sql)
+        const parsedParams = this.parseAndStringifyParams(options)
+
+        const executeAndParseResult = async (params: Record<string, any>) => {
+          const result = await preparedQuery(params)
+          return options.resultSchema?.parse(result) ?? result
+        }
+
+        return (async function* () {
+          for await (const params of parsedParams as Record<string, any>[]) {
             yield await executeAndParseResult(params)
           }
         })()
