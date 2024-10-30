@@ -10,15 +10,19 @@ const normalizeString = (str: string) => {
 
 const schemQlConfigured = new SchemQl<DB>({
   queryFns: {
-    all: (sql, params) => {
-      assert.strictEqual(sql, 'SELECT * FROM users WHERE id = :id')
-      assert.deepEqual(params, {
-        id: 'uuid-1',
-      })
+    all: (sql) => (params) => {
+      assert.strictEqual(sql, 'SELECT * FROM users')
       return [
         {
           id: 'uuid-1',
           email: 'john@doe.com',
+          metadata: '{}',
+          created_at: 1500000000,
+          disabled_at: null,
+        },
+        {
+          id: 'uuid-2',
+          email: 'jane@doe.com',
           metadata: '{}',
           created_at: 1500000000,
           disabled_at: null,
@@ -30,11 +34,7 @@ const schemQlConfigured = new SchemQl<DB>({
 
 describe('SchemQl - global options', () => {
   it('should return the expected result, using global.queriesFn if no override', async () => {
-    const results = await schemQlConfigured.all({
-      params: {
-        id: 'uuid-1',
-      },
-    })('SELECT * FROM users WHERE id = :id')
+    const results = await schemQlConfigured.all({})('SELECT * FROM users')
 
     assert.deepEqual(results, [
       {
@@ -44,12 +44,19 @@ describe('SchemQl - global options', () => {
         created_at: 1500000000,
         disabled_at: null,
       },
+      {
+        id: 'uuid-2',
+        email: 'jane@doe.com',
+        metadata: '{}',
+        created_at: 1500000000,
+        disabled_at: null,
+      },
     ])
   })
 
   it('should return the expected result, using override queriesFn if provided', async () => {
     const results = await schemQlConfigured.all({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => (params) => {
         assert.strictEqual(sql, 'SELECT * FROM users WHERE id = :id')
         assert.deepEqual(params, {
           id: 'uuid-1',
@@ -104,12 +111,19 @@ describe('SchemQl - queryFn related', () => {
 
   it('should return the expected result with queryFn as a Promise', async () => {
     const results = await schemQlUnconfigured.all({
-      queryFn: async (sql, _params) => {
+      queryFn: (sql) => async (params) => {
         assert.strictEqual(sql, 'SELECT * FROM users')
         return await Promise.resolve([
           {
             id: 'uuid-1',
             email: 'john@doe.com',
+            metadata: '{}',
+            created_at: 1500000000,
+            disabled_at: null,
+          },
+          {
+            id: 'uuid-2',
+            email: 'jane@doe.com',
             metadata: '{}',
             created_at: 1500000000,
             disabled_at: null,
@@ -126,6 +140,62 @@ describe('SchemQl - queryFn related', () => {
         created_at: 1500000000,
         disabled_at: null,
       },
+      {
+        id: 'uuid-2',
+        email: 'jane@doe.com',
+        metadata: '{}',
+        created_at: 1500000000,
+        disabled_at: null,
+      },
+    ])
+  })
+
+  it('should return the expected result with queryFn iterable', async () => {
+    const results = await schemQlUnconfigured.firstIter({
+      queryFn: (sql) => (params) => {
+        assert.strictEqual(sql, 'SELECT * FROM users')
+        return {
+          'uuid-1': {
+            id: 'uuid-1',
+            email: 'john@doe.com',
+            metadata: '{}',
+            created_at: 1500000000,
+            disabled_at: null,
+          },
+          'uuid-2': {
+            id: 'uuid-2',
+            email: 'jane@doe.com',
+            metadata: '{}',
+            created_at: 1500000000,
+            disabled_at: null,
+          },
+        }
+      },
+      params: [
+        {
+          id: 'uuid-1',
+        },
+        {
+          id: 'uuid-2',
+        },
+      ]
+    })('SELECT * FROM users')
+
+    assert.deepEqual(results, [
+      {
+        id: 'uuid-1',
+        email: 'john@doe.com',
+        metadata: '{}',
+        created_at: 1500000000,
+        disabled_at: null,
+      },
+      {
+        id: 'uuid-2',
+        email: 'jane@doe.com',
+        metadata: '{}',
+        created_at: 1500000000,
+        disabled_at: null,
+      },
     ])
   })
 })
@@ -133,12 +203,19 @@ describe('SchemQl - queryFn related', () => {
 describe('SchemQl - resultSchema related', () => {
   it('should return the expected result, parsed by resultSchema if provided', async () => {
     const results = await schemQlUnconfigured.all({
-      queryFn: (sql, _params) => {
+      queryFn: (sql) => (params) => {
         assert.strictEqual(sql, 'SELECT * FROM users')
         return [
           {
             id: 'uuid-1',
             email: 'john@doe.com',
+            metadata: '{}',
+            created_at: 1500000000,
+            disabled_at: null,
+          },
+          {
+            id: 'uuid-2',
+            email: 'jane@doe.com',
             metadata: '{}',
             created_at: 1500000000,
             disabled_at: null,
@@ -156,6 +233,13 @@ describe('SchemQl - resultSchema related', () => {
         created_at: 1500000000,
         disabled_at: null,
       },
+      {
+        id: 'uuid-2',
+        email: 'jane@doe.com',
+        metadata: { role: 'user' },
+        created_at: 1500000000,
+        disabled_at: null,
+      },
     ])
   })
 })
@@ -163,16 +247,10 @@ describe('SchemQl - resultSchema related', () => {
 describe('SchemQl - paramsSchema related', () => {
   it('should return the expected result, params parsed by paramsSchema if provided', async () => {
     const result = await schemQlUnconfigured.first({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => (params) => {
         assert.strictEqual(sql, 'SELECT * FROM users WHERE id = :id')
         assert.deepEqual(params, { id: '1' })
-        return {
-          id: 'uuid-1',
-          email: 'john@doe.com',
-          metadata: '{}',
-          created_at: 1500000000,
-          disabled_at: null,
-        }
+        return undefined
       },
       params: {
         id: 'uuid-1',
@@ -180,29 +258,23 @@ describe('SchemQl - paramsSchema related', () => {
       paramsSchema: zUserDb.pick({ id: true }).transform(() => ({ id: '1' })),
     })('SELECT * FROM users WHERE id = :id')
 
-    assert.deepEqual(result, {
-      id: 'uuid-1',
-      email: 'john@doe.com',
-      metadata: '{}',
-      created_at: 1500000000,
-      disabled_at: null,
-    })
+    assert.deepEqual(result, undefined)
   })
 })
 
 describe('SchemQl - sql literal', () => {
   it('should return the expected result', async () => {
     const result = await schemQlUnconfigured.first({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => (params) => {
         assert.strictEqual(
           sql,
           normalizeString(`
             SELECT
               *,
-              LENGTH(id) AS length_id
+              LENGTH(users.id) AS length_id
             FROM users
             WHERE
-              id = :id
+              users.id = :id
           `)
         )
         assert.deepEqual(params, { id: 'uuid-1' })
@@ -224,10 +296,10 @@ describe('SchemQl - sql literal', () => {
       normalizeString(s.sql`
           SELECT
             *,
-            LENGTH(${'@users.id-'}) AS ${'$length_id'}
+            LENGTH(${'@users.id'}) AS ${'$length_id'}
           FROM ${'@users'}
           WHERE
-            ${'@users.id-'} = ${':id'}
+            ${'@users.id'} = ${':id'}
     `)
     )
 
@@ -245,7 +317,7 @@ describe('SchemQl - sql literal', () => {
 
   it('should return the expected result, undefined case', async () => {
     const result = await schemQlUnconfigured.first({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => (params) => {
         assert.strictEqual(
           sql,
           normalizeString(`
@@ -283,7 +355,7 @@ describe('SchemQl - sql literal', () => {
 describe('SchemQl - sql literal advanced', () => {
   it('should return the expected result - with object helper', async () => {
     const result = await schemQlUnconfigured.first({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => (params) => {
         assert.strictEqual(
           sql,
           normalizeString(`
@@ -341,13 +413,13 @@ describe('SchemQl - sql literal advanced', () => {
 
   it('should return the expected result - with sql helper', async () => {
     const result = await schemQlUnconfigured.first({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => (params) => {
         assert.strictEqual(
           sql,
           normalizeString(`
             UPDATE users
             SET
-              metadata = json_set(users.metadata,
+              metadata = JSON_SET(users.metadata,
                 '$.email_variant', :emailVariant,
                 '$.email_verified_at', :emailVerifiedAt
               )
@@ -376,7 +448,7 @@ describe('SchemQl - sql literal advanced', () => {
       normalizeString(s.sql`
         UPDATE ${'@users'}
         SET
-          ${'@users.metadata-'} = json_set(${'@users.metadata'},
+          ${'@users.metadata-'} = JSON_SET(${'@users.metadata'},
             ${'@users.metadata $.email_variant'}, ${':emailVariant'},
             ${'@users.metadata $.email_verified_at'}, ${':emailVerifiedAt'}
           )
@@ -401,7 +473,7 @@ describe('SchemQl - sql literal advanced', () => {
 
   it('should return the expected result - with sqlCond & sqlRaw helpers', async () => {
     const result = await schemQlUnconfigured.all({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => (params) => {
         assert.strictEqual(
           sql,
           normalizeString(`
