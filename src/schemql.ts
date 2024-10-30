@@ -1,6 +1,22 @@
 import type { z } from 'zod'
 
+// Helpers
 type ArrayElement<T> = T extends (infer U)[] ? U : T
+type IsAsyncIterable<T> = T extends AsyncIterable<any> ? true : false
+type IsArray<T> = T extends Array<any> ? true : false
+type ElementType<T> = T extends (infer U)[]
+  ? U
+  : T extends AsyncIterable<infer U>
+    ? U
+    : T
+type ShouldBeIterable<TMethod extends keyof QueryFns, TParams> =
+  TMethod extends 'iterate'
+    ? true
+    : IsArray<TParams> extends true
+      ? true
+      : IsAsyncIterable<TParams> extends true
+        ? true
+        : false
 
 type TableNames<DB> = Extract<keyof DB, string>
 type ColumnNames<DB, T extends TableNames<DB>> = Extract<keyof DB[T], string>
@@ -80,66 +96,120 @@ type SchemQlOptions = {
   shouldStringifyObjectParams?: boolean
 }
 
-type QueryFns = Record<'first' | 'firstOrThrow' | 'all', QueryFn<unknown, Record<string, any>>>
-type QueryFn<TQueryResult, TParams> = (sql: string) => (params?: TParams) => TQueryResult | Promise<TQueryResult>
+type QueryExecutorParams =
+  | Record<string, any>
+  | Record<string, any>[]
+  | AsyncIterable<Record<string, any>>;
 
-type QueryExecutor<_TMethod extends keyof QueryFns, DB> = <
+type QueryFns = Record<'first' | 'firstOrThrow' | 'all', QueryFn<unknown>> & {
+  'iterate': IterativeQueryFn<unknown>
+}
+type QueryFn<TQueryResult, TParams = Record<string, any> | undefined> = (sql: string) => (params?: TParams) => TQueryResult | Promise<TQueryResult>
+type IterativeQueryFn<TQueryResult, TParams = Record<string, any> | undefined> = (sql: string) => (params?: TParams) => AsyncIterable<TQueryResult>
+
+type QueryResult<
+  TMethod extends keyof QueryFns,
+  TQueryResult,
+  TResultSchema extends z.ZodTypeAny | undefined,
+  TParams
+> = ShouldBeIterable<TMethod, TParams> extends true
+  ? AsyncIterable<TResultSchema extends z.ZodTypeAny ? z.infer<TResultSchema> : TQueryResult>
+  : TResultSchema extends z.ZodTypeAny
+    ? z.infer<TResultSchema>
+    : TQueryResult
+
+// Improved type for SqlOrBuilderFn parameters
+type SqlBuilderParams<TParams> = ElementType<TParams>
+
+// Improved type for execution options params
+type ExecutionParams<TParams, TParamsSchema extends z.ZodTypeAny | undefined> =
+  IsAsyncIterable<TParams> extends true
+    ? AsyncIterable<TParamsSchema extends z.ZodTypeAny ? z.infer<TParamsSchema> : ElementType<TParams>>
+    : IsArray<TParams> extends true
+      ? TParams
+      : TParamsSchema extends z.ZodTypeAny
+        ? z.infer<TParamsSchema>
+        : TParams
+
+// Updated QueryExecutor type
+type QueryExecutor<TMethod extends keyof QueryFns, DB> = <
   TQueryResult = unknown,
-  TParams extends Record<string, any> = Record<string, any>,
+  TParams extends Record<string, any> | Record<string, any>[] | AsyncIterable<Record<string, any>> = QueryExecutorParams,
   TParamsSchema extends z.ZodTypeAny | undefined = undefined,
   TResultSchema extends z.ZodTypeAny | undefined = undefined,
 >(
-  options: SchemQlExecOptions<TQueryResult, TParams, TParamsSchema, TResultSchema>
+  options: Omit<SchemQlExecOptions<TQueryResult, TParams, TParamsSchema, TResultSchema>, 'params'> & {
+    params?: ExecutionParams<TParams, TParamsSchema>
+  }
 ) => (
-  sqlOrBuilderFn: SqlOrBuilderFn<TResultSchema, TParams, DB>
-) => Promise<TResultSchema extends z.ZodTypeAny ? z.infer<TResultSchema> : TQueryResult>
+  sqlOrBuilderFn: SqlOrBuilderFn<TResultSchema, SqlBuilderParams<TParams>, DB>
+) => Promise<QueryResult<TMethod, TQueryResult, TResultSchema, TParams>>
 
-interface SchemQlExecOptions<
-  TQueryResult,
-  TParams extends Record<string, any>,
-  TParamsSchema extends z.ZodTypeAny | undefined,
-  TResultSchema extends z.ZodTypeAny | undefined,
-> {
-  queryFn?: QueryFn<TQueryResult, TParams>
-  params?: TParamsSchema extends z.ZodTypeAny ? z.infer<TParamsSchema> : TParams
-  paramsSchema?: TParamsSchema
-  resultSchema?: TResultSchema
-}
-
-type QueryIterExecutor<_TMethod extends keyof QueryFns, DB> = <
-  TQueryResult = unknown,
-  TParams extends Record<string, any>[] = Record<string, any>[],
-  TParamsSchema extends z.ZodTypeAny | undefined = undefined,
-  TResultSchema extends z.ZodTypeAny | undefined = undefined,
->(
-  options: SchemQlIterExecOptions<TQueryResult, TParams, TParamsSchema, TResultSchema>
-) => (
-  sqlOrBuilderFn: SqlOrBuilderFn<TResultSchema, TParams[number], DB>
-) => Promise<AsyncGenerator<TResultSchema extends z.ZodTypeAny ? z.infer<TResultSchema> : TQueryResult>>
-
-type IterParams<T> = T[] | AsyncIterable<T>
-interface SchemQlIterExecOptions<
-  TQueryResult,
-  TParams extends Record<string, any>[],
-  TParamsSchema extends z.ZodTypeAny | undefined,
-  TResultSchema extends z.ZodTypeAny | undefined,
-> extends Omit<SchemQlExecOptions<TQueryResult, TParams, TParamsSchema, TResultSchema>, 'queryFn' | 'params'> {
-  queryFn?: QueryFn<TQueryResult, TParams[number]>
-  params: IterParams<TParamsSchema extends z.ZodTypeAny ? z.infer<TParamsSchema> : TParams[number]>
-}
+    interface SchemQlExecOptions<
+    TQueryResult,
+    TParams = QueryExecutorParams,
+    TParamsSchema extends z.ZodTypeAny | undefined = undefined,
+    TResultSchema extends z.ZodTypeAny | undefined = undefined,
+  > {
+    queryFn?: QueryFn<TQueryResult>
+    params?: ExecutionParams<TParams, TParamsSchema>
+    paramsSchema?: TParamsSchema
+    resultSchema?: TResultSchema
+  }
 
 export class SchemQl<DB> {
   constructor(private readonly options: SchemQlOptions = {}) {}
 
-  private createQueryExecutor<TMethod extends keyof QueryFns>(method: TMethod): QueryExecutor<TMethod, DB> {
+  private createQueryExecutor<TMethod extends keyof QueryFns, TQueryResult>(method: TMethod): QueryExecutor<TMethod, DB> {
     return (options) => async (sqlOrBuilderFn) => {
       const sql = typeof sqlOrBuilderFn === 'function' ? sqlOrBuilderFn(this.createSqlHelper()) : sqlOrBuilderFn
-
-      const parsedParams = this.parseAndStringifyParams(options)
 
       const queryFn = options.queryFn ?? this.options.queryFns?.[method]
       if (!queryFn) {
         throw new Error(`No queryFn provided for method ${method}`)
+      }
+
+      // Iterable params? Iterate results
+      if (Array.isArray(options.params) || isAsyncIterable(options.params)) {
+        const preparedQuery = await queryFn(sql)
+
+        if (Array.isArray(options.params)) {
+          const parsedParams = this.parseAndStringifyParams(options)
+
+          const executeAndParseResult = async (params: Record<string, any>) => {
+            const result = await preparedQuery(params)
+            return options.resultSchema?.parse(result) ?? result
+          }
+
+          return async function* () {
+            for await (const params of parsedParams as Record<string, any>[]) {
+              yield await executeAndParseResult(params)
+            }
+          }()
+        }
+
+        const executeAndParseResult = async (params: Record<string, any>) => {
+          const parsedParams = this.parseAndStringifyParams({ ...options, params } as SchemQlExecOptions<TQueryResult>)
+          const result = await preparedQuery(parsedParams)
+          return options.resultSchema?.parse(result) ?? result
+        }
+
+        return async function* () {
+          for await (const params of options.params as AsyncIterable<Record<string, any>>) {
+            yield await executeAndParseResult(params)
+          }
+        }()
+      }
+
+      const parsedParams = this.parseAndStringifyParams(options)
+
+      // Iterable special fn?
+      if (method === 'iterate') {
+        return async function* () {
+          for await (const result of (queryFn(sql)(parsedParams) as AsyncIterable<TQueryResult>)) {
+            yield options.resultSchema?.parse(result) ?? result
+          }
+        }()
       }
 
       const result = await queryFn(sql)(parsedParams)
@@ -148,33 +218,9 @@ export class SchemQl<DB> {
     }
   }
 
-  private createIterativeQueryExecutor<TMethod extends keyof QueryFns>(method: TMethod): QueryIterExecutor<TMethod, DB> {
-    return (options) => async (sqlOrBuilderFn) => {
-      const sql = typeof sqlOrBuilderFn === 'function' ? sqlOrBuilderFn(this.createSqlHelper()) : sqlOrBuilderFn
-
-      const queryFn = options.queryFn ?? this.options.queryFns?.[method]
-      if (!queryFn) {
-        throw new Error(`No queryFn provided for method ${method}`)
-      }
-
-      const preparedQuery = await queryFn(sql)
-      const queryAndParseResult = async (params: any) => {
-        const parsedParams = this.parseAndStringifyParams({ ...options, params })
-        const result = await preparedQuery(parsedParams)
-        return options.resultSchema?.parse(result) ?? result
-      }
-
-      return async function* () {
-        for await (const params of options.params) {
-          yield await queryAndParseResult(params)
-        }
-      }()
-    }
-  }
-
   private parseAndStringifyParams<
     TQueryResult,
-    TParams extends Record<string, any>,
+    TParams extends Record<string, any> | Record<string, any>[],
     TParamsSchema extends z.ZodTypeAny | undefined,
     TResultSchema extends z.ZodTypeAny | undefined,
   >(options: SchemQlExecOptions<TQueryResult, TParams, TParamsSchema, TResultSchema>): TParams | undefined {
@@ -185,13 +231,9 @@ export class SchemQl<DB> {
     const parsedParams = options.paramsSchema?.parse(options.params) ?? options.params
 
     if (this.options.shouldStringifyObjectParams) {
-      return Object.entries(parsedParams).reduce(
-        (acc, [key, value]) => {
-          acc[key] = typeof value === 'object' ? JSON.stringify(value) : value
-          return acc
-        },
-        {} as Record<string, any>
-      ) as TParams
+      return (Array.isArray(parsedParams)
+        ? parsedParams.map((params) => stringifyObjectParams(params))
+        : stringifyObjectParams(parsedParams)) as TParams
     }
 
     return parsedParams
@@ -268,8 +310,15 @@ export class SchemQl<DB> {
   public first: QueryExecutor<'first', DB> = this.createQueryExecutor('first')
   public firstOrThrow: QueryExecutor<'firstOrThrow', DB> = this.createQueryExecutor('firstOrThrow')
   public all: QueryExecutor<'all', DB> = this.createQueryExecutor('all')
-
-  public firstIter: QueryIterExecutor<'first', DB> = this.createIterativeQueryExecutor('first')
-  public firstOrThrowIter: QueryIterExecutor<'firstOrThrow', DB> = this.createIterativeQueryExecutor('firstOrThrow')
-  public allIter: QueryIterExecutor<'all', DB> = this.createIterativeQueryExecutor('all')
+  public iterate: QueryExecutor<'iterate', DB> = this.createQueryExecutor('iterate')
 }
+
+// Internal
+const isAsyncIterable = <T>(obj: any): obj is AsyncIterable<T> => typeof obj?.[Symbol.asyncIterator] === 'function'
+const stringifyObjectParams = (params: Record<string, any>) => Object.entries(params).reduce(
+  (acc, [key, value]) => {
+    acc[key] = typeof value === 'object' ? JSON.stringify(value) : value
+    return acc
+  },
+  {} as Record<string, any>
+)
