@@ -153,9 +153,9 @@ interface SchemQlExecOptions<
 export class SchemQl<DB> {
   constructor(private readonly options: SchemQlOptions = {}) {}
 
-  private createQueryExecutor<TMethod extends keyof QueryFns, TQueryResult>(
+  private createQueryExecutor = <TMethod extends keyof QueryFns, TQueryResult>(
     method: TMethod
-  ): QueryExecutor<TMethod, DB> {
+  ): QueryExecutor<TMethod, DB> => {
     return (options) => async (sqlOrBuilderFn) => {
       const sql = typeof sqlOrBuilderFn === 'function' ? sqlOrBuilderFn(this.createSqlHelper()) : sqlOrBuilderFn
 
@@ -164,7 +164,7 @@ export class SchemQl<DB> {
         throw new Error(`No queryFn provided for method ${method}`)
       }
 
-      // Iterable params?
+      // Generator params?
       if (typeof options.params === 'function') {
         const preparedQuery = await queryFn(sql)
 
@@ -200,7 +200,7 @@ export class SchemQl<DB> {
 
       const parsedParams = this.parseAndStringifyParams(options)
 
-      // Iterable special fn?
+      // Iterate special fn?
       if (method === 'iterate') {
         return (async function* () {
           for await (const result of queryFn(sql)(parsedParams) as AsyncIterable<TQueryResult>) {
@@ -209,52 +209,66 @@ export class SchemQl<DB> {
         })()
       }
 
+      // Simple case
       const result = await queryFn(sql)(parsedParams)
 
       return options.resultSchema?.parse(result) ?? result
     }
   }
 
-  private parseAndStringifyParams<
+  private parseAndStringifyParams = <
     TQueryResult,
     TParams extends Record<string, any> | Record<string, any>[],
     TParamsSchema extends z.ZodTypeAny | undefined,
     TResultSchema extends z.ZodTypeAny | undefined,
-  >(options: SchemQlExecOptions<TQueryResult, TParams, TParamsSchema, TResultSchema>): TParams | undefined {
+  >(
+    options: SchemQlExecOptions<TQueryResult, TParams, TParamsSchema, TResultSchema>
+  ): TParams | undefined => {
     if (typeof options.params === 'undefined') {
       return undefined
     }
 
     const parsedParams = options.paramsSchema?.parse(options.params) ?? options.params
 
-    if (this.options.shouldStringifyObjectParams) {
-      return (
-        Array.isArray(parsedParams)
-          ? parsedParams.map((params) => stringifyObjectParams(params))
-          : stringifyObjectParams(parsedParams)
-      ) as TParams
+    if (!this.options.shouldStringifyObjectParams) {
+      return parsedParams
     }
 
-    return parsedParams
+    return (
+      Array.isArray(parsedParams)
+        ? parsedParams.map((params) => stringifyObjectParams(params))
+        : stringifyObjectParams(parsedParams)
+    ) as TParams
   }
 
-  private createSqlHelper<
+  private createSqlHelper = <
     TResultSchema extends z.ZodTypeAny | undefined,
     TParams extends Record<string, any>,
-  >(): SchemQlSqlHelper<TResultSchema, TParams, DB> {
+  >(): SchemQlSqlHelper<TResultSchema, TParams, DB> => {
     return {
-      sql: (strings, ...values) => {
-        return strings.reduce((acc, str, i) => {
-          const value = values[i]
-          return `${acc}${str}${value !== undefined ? this.processSingleValue(value) : ''}`
-        }, '')
-      },
+      sql: (strings, ...values) => this.processLiteralExpressions(strings, values),
       sqlCond: (condition, ifTrue, ifFalse = '') => `§${condition ? ifTrue : ifFalse}`,
       sqlRaw: (raw) => `§${raw}`,
     }
   }
 
-  private processSingleValue = <TResultSchema extends z.ZodTypeAny | undefined, TParams extends Record<string, any>>(
+  private processLiteralExpressions = <
+    TResultSchema extends z.ZodTypeAny | undefined,
+    TParams extends Record<string, any>,
+  >(
+    strings: TemplateStringsArray,
+    values: SqlTemplateValue<TResultSchema extends z.ZodTypeAny ? z.infer<TResultSchema> : unknown, TParams, DB>[]
+  ): string => {
+    return strings.reduce((acc, str, i) => {
+      const value = values[i]
+      return `${acc}${str}${value !== undefined ? this.processLiteralExpression(value) : ''}`
+    }, '')
+  }
+
+  private processLiteralExpression = <
+    TResultSchema extends z.ZodTypeAny | undefined,
+    TParams extends Record<string, any>,
+  >(
     value: SqlTemplateValue<TResultSchema extends z.ZodTypeAny ? z.infer<TResultSchema> : unknown, TParams, DB>
   ): string => {
     if (typeof value === 'object') {
@@ -278,14 +292,7 @@ export class SchemQl<DB> {
           // JsonPath arrow? Add quotes
           const jsonPathArrowIndex = str.indexOf(' ->')
           if (jsonPathArrowIndex !== -1) {
-            const jsonPathArrow = str
-              .slice(jsonPathArrowIndex + 1)
-              .split(/(?=->)/)
-              .reduce((path, segment) => {
-                const arrow = segment.startsWith('->>') ? '->>' : '->'
-                const value = segment.replace(arrow, '')
-                return `${path}${arrow}'${value}'`
-              }, '')
+            const jsonPathArrow = quotifyJsonPath(str.slice(jsonPathArrowIndex + 1))
             str = `${str.slice(0, jsonPathArrowIndex)}${jsonPathArrow}`
           }
 
@@ -312,8 +319,6 @@ export class SchemQl<DB> {
   public iterate: QueryExecutor<'iterate', DB> = this.createQueryExecutor('iterate')
 }
 
-// Internal
-const isAsyncIterable = <T>(obj: any): obj is AsyncIterable<T> => typeof obj?.[Symbol.asyncIterator] === 'function'
 const stringifyObjectParams = (params: Record<string, any>) =>
   Object.entries(params).reduce(
     (acc, [key, value]) => {
@@ -322,3 +327,10 @@ const stringifyObjectParams = (params: Record<string, any>) =>
     },
     {} as Record<string, any>
   )
+
+const quotifyJsonPath = (jsonPath: string) =>
+  jsonPath.split(/(?=->)/).reduce((path, segment) => {
+    const arrow = segment.startsWith('->>') ? '->>' : '->'
+    const value = segment.replace(arrow, '')
+    return `${path}${arrow}'${value}'`
+  }, '')

@@ -137,7 +137,7 @@ describe('SchemQl - queryFn related', () => {
         yield { id: 'uuid-1' }
         yield { id: 'uuid-2' }
       },
-      // paramsSchema: zUserDb.pick({ id: true }),
+      paramsSchema: zUserDb.pick({ id: true }),
     })((s) =>
       normalizeString(s.sql`
       SELECT *
@@ -147,8 +147,8 @@ describe('SchemQl - queryFn related', () => {
     `)
     )
 
-    const res1 = await iterResults.next()
-    const res2 = await iterResults.next()
+    const res1 = await iterResults!.next()
+    const res2 = await iterResults!.next()
     assert.deepEqual(res1.value, fixtureUsers.get('uuid-1'))
     assert.deepEqual(res2.value, fixtureUsers.get('uuid-2'))
   })
