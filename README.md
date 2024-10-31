@@ -5,15 +5,15 @@
 
 # SchemQl
 
-**SchemQl** combines the power of raw SQL with TypeScript's type safety, letting you access any DBMS through JavaScript/TypeScript while preventing runtime errors and enhancing autocompletion.
+**SchemQl** simplifies database interactions by allowing you to write advanced SQL queries that fully leverage your DBMS features, while providing type safety through the use of schemas and offering convenient execution methods.
 
 **Key features:**
 
-- **Database agnostic**: Compatible with any DBMS (e.g. better-sqlite3)
+- **Database agnostic**: Compatible with any DBMS
 - **SQL-first**: Write SQL with precise type checks on literals like tables, columns (JSON fields & some JSONPath included), and parameters.
-- **Lightweight**: Focuses on essentials only.
-- **Zod integration**: Optional schema validation (JSON fields include), adds error-proofing and parsing for your SQL params and results.
-- **Targeted Type Safety**: Autocomplete and validate only where it matters.
+- **Various parameters** Supports single objects, arrays of objects, and asynchronous generators for parameters.
+- **Zod integration** Use Zod schemas to validate and parse parameters and query results. (JSON fields included)
+- **Iterative Execution** Process large datasets efficiently using asynchronous generators.
 
 
 ![Screenshot from 2024-10-29 14-41-05(1)](https://github.com/user-attachments/assets/86b1c3cd-2393-4914-b943-b249d6dad59a)
@@ -35,8 +35,11 @@ Here's a basic example of how to use SchemQl:
 <details>
 <summary>1. Create your database schema and expose it with a DB interface</summary>
 
+Tips: use your favorite AI and ask it to generate your Zod schema from your SQL
+
+If you use JSON data, use the embeded `parseJsonPreprocessor` to let Zod handle JSON parsing for you.
+
 ```typescript
-// Tips: use your favorite AI to generate your Zod schema from your SQL
 
 import { parseJsonPreprocessor } from '@a2lix/schemql'
 import { z } from 'zod'
@@ -45,7 +48,7 @@ export const zUserDb = z.object({
   id: z.string(),
   email: z.string(),
   metadata: z.preprocess(
-    parseJsonPreprocessor,   // Optionally let Zod handle JSON parsing if you use JSON data
+    parseJsonPreprocessor,   // ! Zod will handle JSON parsing of your JSON column
     z.object({
       role: z.enum(['user', 'admin']).default('user'),
     })
@@ -68,8 +71,12 @@ export interface DB {
 <details>
 <summary>2. Initialize your instance of SchemQl with the DB interface typing</summary>
 
+Example with better-sqlite3, but you can use your favorite library.
+
+Here the 4 methods first/firstOrThrow/all/iterate are defined at the instance level, but you can define them at the query level if you prefer.
+You can also ignore some methods if you don't need them.
+
 ```typescript
-// Example with better-sqlite3, but you can use your favorite library
 import { SchemQl } from '@a2lix/schemql'
 import SQLite from 'better-sqlite3'
 import type { DB } from '@/schema'
@@ -78,41 +85,73 @@ const db = new SQLite('sqlite.db')
 
 const schemQl = new SchemQl<DB>({
   queryFns: {    // Optional at this level, but eases usage
-    first: (sql, params) => {
+    first: (sql) => {
       const stmt = db.prepare(sql)
-      return stmt.get(params)
-    },
-    firstOrThrow: (sql, params) => {
-      const stmt = db.prepare(sql)
-      const first = stmt.get(params)
-      if (first === undefined) {
-        throw new Error('No result found')
+      return (params) => {
+        return stmt.get(params)
       }
-      return first
     },
-    all: (sql, params) => {
+    firstOrThrow: (sql) => {
       const stmt = db.prepare(sql)
-      return params ? stmt.all(params) : stmt.all()
-    }
+      return (params) => {
+        const first = stmt.get(params)
+        if (first === undefined) {
+          throw new Error('No result found')
+        }
+        return first
+      }
+    },
+    all: (sql) => {
+      const stmt = db.prepare(sql)
+      return (params) => {
+        return params ? stmt.all(params) : stmt.all()
+      }
+    },
+    iterate: (sql) => {
+      const stmt = db.prepare(sql)
+      return (params) => {
+        return stmt.iterate(params)
+      }
+    },
   },
   shouldStringifyObjectParams: true,   // Optional. Automatically stringify objects (useful for JSON)
 })
 ```
+
+You can also keep initialization simple if your move some logic in you own custom class
+
+```typescript
+const sqliteDb = new SQLiteDb()  // Custom class with better error handling
+
+const schemQl = new SchemQl<DB>({
+  queryFns: {
+    first: sqliteDb.queryFirst.bind(db),
+    firstOrThrow: sqliteDb.queryFirstOrThrow.bind(db),
+    all: sqliteDb.queryAll.bind(db),
+  },
+  shouldStringifyObjectParams: true,
+})
+```
+
 </details>
 
 <details open>
-<summary>3. Use your instance of SchemQl to `.first()` / `.firstOrThrow()` / `.all()`</summary>
+<summary>3. Use your instance of SchemQl with `.first()` / `.firstOrThrow()` / `.all()` / `.iterate()`</summary>
+
+Simple use with resultSchema only and no SQL literal string
 
 ```typescript
-// Simple use with resultSchema only and no SQL literal string
 const allUsers = await schemQl.all({
   resultSchema: zUserDb.array(),
 })(`
   SELECT *
   FROM users
 `)
+```
 
-// More advanced
+More advanced example
+
+```typescript
 const firstUser = await schemQl.first({
   params: { id: 'uuid-1' },
   paramsSchema: zUserDb.pick({ id: true }),
@@ -128,7 +167,7 @@ const firstUser = await schemQl.first({
 
 const allUsersLimit = await schemQl.all({
   params: { limit: 10 },
-  resultSchema: zUserDb.array(),
+  resultSchema: zUserDb.array(),   // ! Note the array() use for .all() case
 })((s) => s.sql`
   SELECT
     ${'@users.*'}
@@ -143,7 +182,7 @@ const allUsersPaginated = await schemQl.all({
     dir: data.query.dir,
   },
   paramsSchema: zRequestQuery,
-  resultSchema: zUserDb.array(),
+  resultSchema: zUserDb.array(),   // ! Note the array() use for .all() case
 })((s) => s.sql`
   SELECT
     ${'@users.*'}
@@ -155,9 +194,12 @@ const allUsersPaginated = await schemQl.all({
   ORDER BY ${'@users.id'} ${s.sqlCond(data.query.dir === 'prev', 'DESC', 'ASC')}
   LIMIT ${':limit'}
 `)
+```
 
-// Automatically stringify JSON params 'metadata' (by schemQl if enabled)
-// and get parsed JSON metadata, as well (if Zod preprocess set rightly)
+Automatically stringify JSON params 'metadata' (by schemQl if enabled)
+and get parsed JSON metadata, as well (if Zod preprocess set rightly)
+
+```typescript
 const firstSession = await schemQl.firstOrThrow({
   params: {
     id: uuidv4(),
@@ -167,10 +209,9 @@ const firstSession = await schemQl.firstOrThrow({
     },
     expiresAtAdd: 10000,
   },
-  paramsSchema: z.object({
-    ...zSessionDb.pick({ id: true, user_id: true, metadata: true }).shape,
+  paramsSchema: zSessionDb.pick({ id: true, user_id: true, metadata: true }).and(z.object({
     expiresAtAdd: z.number().int(),
-  }),
+  })),
   resultSchema: zSessionDb,
 })((s) => s.sql`
   INSERT INTO
@@ -179,10 +220,50 @@ const firstSession = await schemQl.firstOrThrow({
     (
       ${':id'}
       , ${':user_id'}
-      , json(${':metadata'})
-      , strftime('%s', 'now') + ${':expiresAtAdd'}
+      , JSON(${':metadata'})
+      , STRFTIME('%s', 'now') + ${':expiresAtAdd'}
     )
   RETURNING *
+`)
+```
+
+Handle iteration when required
+
+```typescript
+const iterResults = await schemQl.first({
+  params: [
+    { id: 'uuid-1' },
+    { id: 'uuid-2' }
+  ],
+  paramsSchema: zUserDb.pick({ id: true }).array(),  // ! Note the array() use when array of params
+  resultSchema: zUserDb,
+})((s) => s.sql`
+  SELECT *
+  FROM ${'@users'}
+  WHERE
+    ${'@users.id'} = ${':id'}
+`)
+
+const iterResults = await schemQl.first({
+  params: async function* () {
+    yield { id: 'uuid-1' }
+    yield { id: 'uuid-2' }
+  },
+  paramsSchema: zUserDb.pick({ id: true }),
+  resultSchema: zUserDb,
+})((s) => s.sql`
+  SELECT *
+  FROM ${'@users'}
+  WHERE
+    ${'@users.id'} = ${':id'}
+`)
+
+const iterResults = await schemQl.iterate({
+  resultSchema: zUserDb,
+})((s) => s.sql`
+  SELECT *
+  FROM ${'@users'}
+  LIMIT 10
 `)
 ```
 </details>

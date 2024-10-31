@@ -3,16 +3,6 @@ import type { z } from 'zod'
 // Helpers
 type ArrayElement<T> = T extends (infer U)[] ? U : T
 type AsyncGeneratorFn<T> = () => AsyncGenerator<T, void, unknown>
-type IsAsyncIterable<T> = T extends AsyncIterable<any> ? true : false
-type IsArray<T> = T extends Array<any> ? true : false
-type ElementType<T> = T extends (infer U)[] ? U : T extends AsyncGeneratorFn<infer U> ? U : T
-type ShouldBeIterable<TMethod extends keyof QueryFns, TParams> = TMethod extends 'iterate'
-  ? true
-  : IsArray<TParams> extends true
-    ? true
-    : IsAsyncIterable<TParams> extends true
-      ? true
-      : false
 
 type TableNames<DB> = Extract<keyof DB, string>
 type ColumnNames<DB, T extends TableNames<DB>> = Extract<keyof DB[T], string>
@@ -104,23 +94,33 @@ type IterativeQueryFn<TQueryResult, TParams = Record<string, any> | undefined> =
   sql: string
 ) => (params?: TParams) => AsyncIterable<TQueryResult>
 
+type IsIterativeExecution<TMethod extends keyof QueryFns, TParams> = TMethod extends 'iterate'
+  ? true
+  : TParams extends Array<any>
+    ? true
+    : TParams extends AsyncGeneratorFn<any>
+      ? true
+      : false
+
 type QueryResult<
   TMethod extends keyof QueryFns,
   TQueryResult,
   TResultSchema extends z.ZodTypeAny | undefined,
   TParams,
-> = ShouldBeIterable<TMethod, TParams> extends true
-  ? AsyncIterable<TResultSchema extends z.ZodTypeAny ? z.infer<TResultSchema> : TQueryResult>
+> = IsIterativeExecution<TMethod, TParams> extends true
+  ? AsyncGenerator<TResultSchema extends z.ZodTypeAny ? z.infer<TResultSchema> : TQueryResult, void, unknown>
   : TResultSchema extends z.ZodTypeAny
     ? z.infer<TResultSchema>
     : TQueryResult
 
-type SqlBuilderParams<TParams> = ElementType<TParams>
+type ParamsType<T> = T extends AsyncGeneratorFn<infer P> ? P : T extends Array<infer P> ? P : T
 
-type ExecutionParams<TParams, TParamsSchema extends z.ZodTypeAny | undefined> = IsAsyncIterable<TParams> extends true
-  ? AsyncIterable<TParamsSchema extends z.ZodTypeAny ? z.infer<TParamsSchema> : ElementType<TParams>>
-  : IsArray<TParams> extends true
-    ? TParams
+type ExecutionParams<TParams, TParamsSchema extends z.ZodTypeAny | undefined> = TParams extends AsyncGeneratorFn<
+  infer P
+>
+  ? AsyncGeneratorFn<P>
+  : TParams extends Array<infer P>
+    ? P[]
     : TParamsSchema extends z.ZodTypeAny
       ? z.infer<TParamsSchema>
       : TParams
@@ -135,7 +135,7 @@ type QueryExecutor<TMethod extends keyof QueryFns, DB> = <
     params?: ExecutionParams<TParams, TParamsSchema>
   }
 ) => (
-  sqlOrBuilderFn: SqlOrBuilderFn<TResultSchema, SqlBuilderParams<TParams>, DB>
+  sqlOrBuilderFn: SqlOrBuilderFn<TResultSchema, ParamsType<TParams>, DB>
 ) => Promise<QueryResult<TMethod, TQueryResult, TResultSchema, TParams>>
 
 interface SchemQlExecOptions<
