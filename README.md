@@ -5,14 +5,14 @@
 
 # SchemQl
 
-**SchemQl** simplifies database interactions by allowing you to write advanced SQL queries that fully leverage your DBMS features, while providing type safety through the use of schemas and offering convenient execution methods.
+**SchemQl** simplifies database interactions by allowing you to write advanced SQL queries that fully leverage the features of your DBMS, while providing type safety through the use of schemas and offering convenient execution methods.
 
 **Key features:**
 
-- **Database agnostic**: Compatible with any DBMS
+- **Database agnostic**: Compatible with any DBMS.
 - **SQL-first**: Write SQL with precise type checks on literals like tables, columns (JSON fields & some JSONPath included), and parameters.
-- **Various parameters** Supports single objects, arrays of objects, and asynchronous generators for parameters.
-- **Zod integration** Use Zod schemas to validate and parse parameters and query results. (JSON fields included)
+- **Flexible parameters** Supports single objects, arrays of objects, and asynchronous generators for parameters.
+- **Zod integration** Use Zod schemas to validate and parse parameters and query results. (JSON fields included).
 - **Iterative Execution** Process large datasets efficiently using asynchronous generators.
 
 
@@ -35,9 +35,9 @@ Here's a basic example of how to use SchemQl:
 <details>
 <summary>1. Create your database schema and expose it with a DB interface</summary>
 
-Tips: use your favorite AI and ask it to generate your Zod schema from your SQL
+Tip: Use your favorite AI to generate a Zod schema from your SQL.
 
-If you use JSON data, use the embeded `parseJsonPreprocessor` to let Zod handle JSON parsing for you.
+If using JSON data, leverage the built-in `parseJsonPreprocessor`.
 
 ```typescript
 
@@ -48,7 +48,7 @@ export const zUserDb = z.object({
   id: z.string(),
   email: z.string(),
   metadata: z.preprocess(
-    parseJsonPreprocessor,   // ! Zod will handle JSON parsing of your JSON column
+    parseJsonPreprocessor,   // ! Zod handles JSON parsing for JSON columns
     z.object({
       role: z.enum(['user', 'admin']).default('user'),
     })
@@ -84,7 +84,7 @@ import type { DB } from '@/schema'
 const db = new SQLite('sqlite.db')
 
 const schemQl = new SchemQl<DB>({
-  queryFns: {    // Optional at this level, but eases usage
+  queryFns: {    // Optional at this level, but simplifies usage
     first: (sql) => {
       const stmt = db.prepare(sql)
       return (params) => {
