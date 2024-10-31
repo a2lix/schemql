@@ -144,6 +144,35 @@ describe('SchemQl - queryFn related', () => {
           return fixtureUsers.get(params!.id)
         }
       },
+      params: function* () {
+        yield { id: 'uuid-1' }
+        yield { id: 'uuid-2' }
+      },
+      paramsSchema: zUserDb.pick({ id: true }),
+      // resultSchema: zUserDb,
+    })((s) =>
+      normalizeString(s.sql`
+      SELECT *
+      FROM ${'@users'}
+      WHERE
+        ${'@users.id'} = ${':id'}
+    `)
+    )
+
+    const res1 = await iterResults!.next()
+    const res2 = await iterResults!.next()
+    assert.deepEqual(res1.value, fixtureUsers.get('uuid-1'))
+    assert.deepEqual(res2.value, fixtureUsers.get('uuid-2'))
+  })
+
+  it('should return the expected result with async generator params', async () => {
+    const iterResults = await schemQlUnconfigured.first({
+      queryFn: (sql) => {
+        assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
+        return (params) => {
+          return fixtureUsers.get(params!.id)
+        }
+      },
       params: async function* () {
         yield { id: 'uuid-1' }
         yield { id: 'uuid-2' }
@@ -169,7 +198,7 @@ describe('SchemQl - queryFn related', () => {
     const iterResults = await schemQlUnconfigured.iterate({
       queryFn: (sql) => {
         assert.strictEqual(sql, 'SELECT * FROM users')
-        return async function* (params) {
+        return function* (params) {
           yield fixtureUsers.get('uuid-1')
           yield fixtureUsers.get('uuid-2')
         }

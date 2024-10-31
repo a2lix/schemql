@@ -245,7 +245,7 @@ const iterResults = await schemQl.first({
 `)
 
 const iterResults = await schemQl.first({
-  params: async function* () {
+  params: function* () {
     yield { id: 'uuid-1' }
     yield { id: 'uuid-2' }
   },

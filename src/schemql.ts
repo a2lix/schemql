@@ -2,6 +2,7 @@ import type { z } from 'zod'
 
 // Helpers
 type ArrayElement<T> = T extends (infer U)[] ? U : T
+type GeneratorFn<T> = () => Generator<T, void, unknown>
 type AsyncGeneratorFn<T> = () => AsyncGenerator<T, void, unknown>
 
 type TableNames<DB> = Extract<keyof DB, string>
@@ -66,7 +67,7 @@ type SqlOrBuilderFn<TResultSchema extends z.ZodTypeAny | undefined, TParams exte
   | string
   | ((s: SchemQlSqlHelper<TResultSchema, TParams, DB>) => string)
 
-interface SchemQlSqlHelper<TResultSchema extends z.ZodTypeAny | undefined, TParams extends Record<string, any>, DB> {
+type SchemQlSqlHelper<TResultSchema extends z.ZodTypeAny | undefined, TParams extends Record<string, any>, DB> = {
   sql: <
     T extends SqlTemplateValues<TResultSchema extends z.ZodTypeAny ? z.infer<TResultSchema> : unknown, TParams, DB>,
   >(
@@ -82,7 +83,11 @@ type SchemQlOptions = {
   shouldStringifyObjectParams?: boolean
 }
 
-type QueryExecutorParams = Record<string, any> | Record<string, any>[] | AsyncGeneratorFn<Record<string, any>>
+type QueryExecutorParams =
+  | Record<string, any>
+  | Record<string, any>[]
+  | GeneratorFn<Record<string, any>>
+  | AsyncGeneratorFn<Record<string, any>>
 
 type QueryFns = Record<'first' | 'firstOrThrow' | 'all', QueryFn<unknown>> & {
   iterate: IterativeQueryFn<unknown>
@@ -100,8 +105,9 @@ type IsIterativeExecution<TMethod extends keyof QueryFns, TParams> = TMethod ext
     ? true
     : TParams extends AsyncGeneratorFn<any>
       ? true
-      : false
-
+      : TParams extends GeneratorFn<any>
+        ? true
+        : false
 type QueryResult<
   TMethod extends keyof QueryFns,
   TQueryResult,
@@ -113,17 +119,25 @@ type QueryResult<
     ? z.infer<TResultSchema>
     : TQueryResult
 
-type ParamsType<T> = T extends AsyncGeneratorFn<infer P> ? P : T extends Array<infer P> ? P : T
+type ParamsType<T> = T extends AsyncGeneratorFn<infer P>
+  ? P
+  : T extends GeneratorFn<infer P>
+    ? P
+    : T extends Array<infer P>
+      ? P
+      : T
 
 type ExecutionParams<TParams, TParamsSchema extends z.ZodTypeAny | undefined> = TParams extends AsyncGeneratorFn<
   infer P
 >
   ? AsyncGeneratorFn<P>
-  : TParams extends Array<infer P>
-    ? P[]
-    : TParamsSchema extends z.ZodTypeAny
-      ? z.infer<TParamsSchema>
-      : TParams
+  : TParams extends GeneratorFn<infer P>
+    ? GeneratorFn<P>
+    : TParams extends Array<infer P>
+      ? P[]
+      : TParamsSchema extends z.ZodTypeAny
+        ? z.infer<TParamsSchema>
+        : TParams
 
 type QueryExecutor<TMethod extends keyof QueryFns, DB> = <
   TQueryResult = unknown,
@@ -138,12 +152,12 @@ type QueryExecutor<TMethod extends keyof QueryFns, DB> = <
   sqlOrBuilderFn: SqlOrBuilderFn<TResultSchema, ParamsType<TParams>, DB>
 ) => Promise<QueryResult<TMethod, TQueryResult, TResultSchema, TParams>>
 
-interface SchemQlExecOptions<
+type SchemQlExecOptions<
   TQueryResult,
   TParams = QueryExecutorParams,
   TParamsSchema extends z.ZodTypeAny | undefined = undefined,
   TResultSchema extends z.ZodTypeAny | undefined = undefined,
-> {
+> = {
   queryFn?: QueryFn<TQueryResult>
   params?: ExecutionParams<TParams, TParamsSchema>
   paramsSchema?: TParamsSchema

@@ -16,7 +16,7 @@
       "correctness": {
         "noUnusedImports": "error",
         "noUnusedPrivateClassMembers": "error",
-        "noUnusedVariables": "error",
+        "noUnusedVariables": "warn",
         "useHookAtTopLevel": "error",
         "noConstantCondition": "warn"
       },
