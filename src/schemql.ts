@@ -96,7 +96,7 @@ type IterativeQueryFn<TQueryResult, TParams = Record<string, any> | undefined> =
 
 type IsIterativeExecution<TMethod extends keyof QueryFns, TParams> = TMethod extends 'iterate'
   ? true
-  : TParams extends Array<any>
+  : TParams extends any[]
     ? true
     : TParams extends AsyncGeneratorFn<any>
       ? true
