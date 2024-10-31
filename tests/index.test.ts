@@ -108,7 +108,7 @@ describe('SchemQl - queryFn related', () => {
       queryFn: (sql) => {
         assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
         return (params) => {
-          return fixtureUsers.get(params!.id)
+          return fixtureUsers.get(params?.id)
         }
       },
       params: [
@@ -130,8 +130,8 @@ describe('SchemQl - queryFn related', () => {
     `)
     )
 
-    const res1 = await iterResults!.next()
-    const res2 = await iterResults!.next()
+    const res1 = await iterResults?.next()
+    const res2 = await iterResults?.next()
     assert.deepEqual(res1.value, fixtureUsers.get('uuid-1'))
     assert.deepEqual(res2.value, fixtureUsers.get('uuid-2'))
   })
@@ -141,7 +141,7 @@ describe('SchemQl - queryFn related', () => {
       queryFn: (sql) => {
         assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
         return (params) => {
-          return fixtureUsers.get(params!.id)
+          return fixtureUsers.get(params?.id)
         }
       },
       params: function* () {
@@ -159,8 +159,8 @@ describe('SchemQl - queryFn related', () => {
     `)
     )
 
-    const res1 = await iterResults!.next()
-    const res2 = await iterResults!.next()
+    const res1 = await iterResults?.next()
+    const res2 = await iterResults?.next()
     assert.deepEqual(res1.value, fixtureUsers.get('uuid-1'))
     assert.deepEqual(res2.value, fixtureUsers.get('uuid-2'))
   })
@@ -170,12 +170,12 @@ describe('SchemQl - queryFn related', () => {
       queryFn: (sql) => {
         assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
         return (params) => {
-          return fixtureUsers.get(params!.id)
+          return fixtureUsers.get(params?.id)
         }
       },
       params: async function* () {
-        yield { id: 'uuid-1' }
-        yield { id: 'uuid-2' }
+        yield await { id: 'uuid-1' }
+        yield await { id: 'uuid-2' }
       },
       paramsSchema: zUserDb.pick({ id: true }),
       // resultSchema: zUserDb,
@@ -188,8 +188,8 @@ describe('SchemQl - queryFn related', () => {
     `)
     )
 
-    const res1 = await iterResults!.next()
-    const res2 = await iterResults!.next()
+    const res1 = await iterResults?.next()
+    const res2 = await iterResults?.next()
     assert.deepEqual(res1.value, fixtureUsers.get('uuid-1'))
     assert.deepEqual(res2.value, fixtureUsers.get('uuid-2'))
   })
@@ -211,8 +211,8 @@ describe('SchemQl - queryFn related', () => {
     `)
     )
 
-    const res1 = await iterResults!.next()
-    const res2 = await iterResults!.next()
+    const res1 = await iterResults?.next()
+    const res2 = await iterResults?.next()
     assert.deepEqual(res1.value, fixtureUsers.get('uuid-1'))
     assert.deepEqual(res2.value, fixtureUsers.get('uuid-2'))
   })
