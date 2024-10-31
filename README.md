@@ -34,7 +34,7 @@ Here's a basic example of how to use SchemQl:
 
 <details>
 <summary>1. Create your database schema and expose it with a DB interface</summary>
-
+<br>
 Tip: Use your favorite AI to generate a Zod schema from your SQL.
 
 If using JSON data, leverage the built-in `parseJsonPreprocessor`.
@@ -70,7 +70,7 @@ export interface DB {
 
 <details>
 <summary>2. Initialize your instance of SchemQl with the DB interface typing</summary>
-
+<br>
 Example with better-sqlite3, but you can use your favorite library.
 
 Here the 4 methods first/firstOrThrow/all/iterate are defined at the instance level, but you can define them at the query level if you prefer.
@@ -137,7 +137,7 @@ const schemQl = new SchemQl<DB>({
 
 <details open>
 <summary>3. Use your instance of SchemQl with `.first()` / `.firstOrThrow()` / `.all()` / `.iterate()`</summary>
-
+<br>
 Simple use with resultSchema only and no SQL literal string
 
 ```typescript
