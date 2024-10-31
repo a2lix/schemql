@@ -8,62 +8,58 @@ const normalizeString = (str: string) => {
   return str.replace(/\s+/g, ' ').trim()
 }
 
+const fixtureUsers = new Map([
+  [
+    'uuid-1',
+    {
+      id: 'uuid-1',
+      email: 'john@doe.com',
+      metadata: '{}',
+      created_at: 1500000000,
+      disabled_at: null,
+    },
+  ],
+  [
+    'uuid-2',
+    {
+      id: 'uuid-2',
+      email: 'jane@doe.com',
+      metadata: '{}',
+      created_at: 1500000000,
+      disabled_at: null,
+    },
+  ],
+])
+
 const schemQlConfigured = new SchemQl<DB>({
   queryFns: {
-    all: (sql, params) => {
-      assert.strictEqual(sql, 'SELECT * FROM users WHERE id = :id')
-      assert.deepEqual(params, {
-        id: 'uuid-1',
-      })
-      return [
-        {
-          id: 'uuid-1',
-          email: 'john@doe.com',
-          metadata: '{}',
-          created_at: 1500000000,
-          disabled_at: null,
-        },
-      ]
+    all: (sql) => {
+      assert.strictEqual(sql, 'SELECT * FROM users')
+      return (params) => {
+        return fixtureUsers.values().toArray()
+      }
     },
   },
 })
 
 describe('SchemQl - global options', () => {
   it('should return the expected result, using global.queriesFn if no override', async () => {
-    const results = await schemQlConfigured.all({
-      params: {
-        id: 'uuid-1',
-      },
-    })('SELECT * FROM users WHERE id = :id')
+    const results = await schemQlConfigured.all({})('SELECT * FROM users')
 
-    assert.deepEqual(results, [
-      {
-        id: 'uuid-1',
-        email: 'john@doe.com',
-        metadata: '{}',
-        created_at: 1500000000,
-        disabled_at: null,
-      },
-    ])
+    assert.deepEqual(results, fixtureUsers.values().toArray())
   })
 
   it('should return the expected result, using override queriesFn if provided', async () => {
     const results = await schemQlConfigured.all({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => {
         assert.strictEqual(sql, 'SELECT * FROM users WHERE id = :id')
-        assert.deepEqual(params, {
-          id: 'uuid-1',
-        })
-        return {
-          rows: [
-            {
-              id: 'uuid-1',
-              email: 'john@doe.com',
-              metadata: '{}',
-              created_at: 1500000000,
-              disabled_at: null,
-            },
-          ],
+        return (params) => {
+          assert.deepEqual(params, {
+            id: 'uuid-1',
+          })
+          return {
+            rows: [fixtureUsers.get('uuid-1')],
+          }
         }
       },
       params: {
@@ -72,15 +68,7 @@ describe('SchemQl - global options', () => {
     })('SELECT * FROM users WHERE id = :id')
 
     assert.deepEqual(results, {
-      rows: [
-        {
-          id: 'uuid-1',
-          email: 'john@doe.com',
-          metadata: '{}',
-          created_at: 1500000000,
-          disabled_at: null,
-        },
-      ],
+      rows: [fixtureUsers.get('uuid-1')],
     })
   })
 })
@@ -102,48 +90,142 @@ describe('SchemQl - queryFn related', () => {
     )
   })
 
-  it('should return the expected result with queryFn as a Promise', async () => {
+  it('should return the expected result with async queryFn', async () => {
     const results = await schemQlUnconfigured.all({
-      queryFn: async (sql, _params) => {
+      queryFn: (sql) => {
         assert.strictEqual(sql, 'SELECT * FROM users')
-        return await Promise.resolve([
-          {
-            id: 'uuid-1',
-            email: 'john@doe.com',
-            metadata: '{}',
-            created_at: 1500000000,
-            disabled_at: null,
-          },
-        ])
+        return async (params) => {
+          return await Promise.resolve(fixtureUsers.values().toArray())
+        }
       },
     })('SELECT * FROM users')
 
-    assert.deepEqual(results, [
-      {
-        id: 'uuid-1',
-        email: 'john@doe.com',
-        metadata: '{}',
-        created_at: 1500000000,
-        disabled_at: null,
+    assert.deepEqual(results, fixtureUsers.values().toArray())
+  })
+
+  it('should return the expected result with array params', async () => {
+    const iterResults = await schemQlUnconfigured.first({
+      queryFn: (sql) => {
+        assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
+        return (params) => {
+          return fixtureUsers.get(params?.id)
+        }
       },
-    ])
+      params: [
+        {
+          id: 'uuid-1',
+        },
+        {
+          id: 'uuid-2',
+        },
+      ],
+      paramsSchema: zUserDb.pick({ id: true }).array(),
+      // resultSchema: zUserDb,
+    })((s) =>
+      normalizeString(s.sql`
+      SELECT *
+      FROM ${'@users'}
+      WHERE
+        ${'@users.id'} = ${':id'}
+    `)
+    )
+
+    const res1 = await iterResults?.next()
+    const res2 = await iterResults?.next()
+    assert.deepEqual(res1.value, fixtureUsers.get('uuid-1'))
+    assert.deepEqual(res2.value, fixtureUsers.get('uuid-2'))
+  })
+
+  it('should return the expected result with generator params', async () => {
+    const iterResults = await schemQlUnconfigured.first({
+      queryFn: (sql) => {
+        assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
+        return (params) => {
+          return fixtureUsers.get(params?.id)
+        }
+      },
+      params: function* () {
+        yield { id: 'uuid-1' }
+        yield { id: 'uuid-2' }
+      },
+      paramsSchema: zUserDb.pick({ id: true }),
+      // resultSchema: zUserDb,
+    })((s) =>
+      normalizeString(s.sql`
+      SELECT *
+      FROM ${'@users'}
+      WHERE
+        ${'@users.id'} = ${':id'}
+    `)
+    )
+
+    const res1 = await iterResults?.next()
+    const res2 = await iterResults?.next()
+    assert.deepEqual(res1.value, fixtureUsers.get('uuid-1'))
+    assert.deepEqual(res2.value, fixtureUsers.get('uuid-2'))
+  })
+
+  it('should return the expected result with async generator params', async () => {
+    const iterResults = await schemQlUnconfigured.first({
+      queryFn: (sql) => {
+        assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
+        return (params) => {
+          return fixtureUsers.get(params?.id)
+        }
+      },
+      params: async function* () {
+        yield await { id: 'uuid-1' }
+        yield await { id: 'uuid-2' }
+      },
+      paramsSchema: zUserDb.pick({ id: true }),
+      // resultSchema: zUserDb,
+    })((s) =>
+      normalizeString(s.sql`
+      SELECT *
+      FROM ${'@users'}
+      WHERE
+        ${'@users.id'} = ${':id'}
+    `)
+    )
+
+    const res1 = await iterResults?.next()
+    const res2 = await iterResults?.next()
+    assert.deepEqual(res1.value, fixtureUsers.get('uuid-1'))
+    assert.deepEqual(res2.value, fixtureUsers.get('uuid-2'))
+  })
+
+  it('should return the expected result with iterate method', async () => {
+    const iterResults = await schemQlUnconfigured.iterate({
+      queryFn: (sql) => {
+        assert.strictEqual(sql, 'SELECT * FROM users')
+        return function* (params) {
+          yield fixtureUsers.get('uuid-1')
+          yield fixtureUsers.get('uuid-2')
+        }
+      },
+      // resultSchema: zUserDb,
+    })((s) =>
+      normalizeString(s.sql`
+      SELECT *
+      FROM ${'@users'}
+    `)
+    )
+
+    const res1 = await iterResults?.next()
+    const res2 = await iterResults?.next()
+    assert.deepEqual(res1.value, fixtureUsers.get('uuid-1'))
+    assert.deepEqual(res2.value, fixtureUsers.get('uuid-2'))
   })
 })
 
 describe('SchemQl - resultSchema related', () => {
   it('should return the expected result, parsed by resultSchema if provided', async () => {
     const results = await schemQlUnconfigured.all({
-      queryFn: (sql, _params) => {
+      queryFn: (sql) => {
         assert.strictEqual(sql, 'SELECT * FROM users')
-        return [
-          {
-            id: 'uuid-1',
-            email: 'john@doe.com',
-            metadata: '{}',
-            created_at: 1500000000,
-            disabled_at: null,
-          },
-        ]
+        return (params) => {
+          return fixtureUsers.values().toArray()
+        }
       },
       resultSchema: zUserDb.array(),
     })('SELECT * FROM users')
@@ -156,6 +238,13 @@ describe('SchemQl - resultSchema related', () => {
         created_at: 1500000000,
         disabled_at: null,
       },
+      {
+        id: 'uuid-2',
+        email: 'jane@doe.com',
+        metadata: { role: 'user' },
+        created_at: 1500000000,
+        disabled_at: null,
+      },
     ])
   })
 })
@@ -163,15 +252,11 @@ describe('SchemQl - resultSchema related', () => {
 describe('SchemQl - paramsSchema related', () => {
   it('should return the expected result, params parsed by paramsSchema if provided', async () => {
     const result = await schemQlUnconfigured.first({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => {
         assert.strictEqual(sql, 'SELECT * FROM users WHERE id = :id')
-        assert.deepEqual(params, { id: '1' })
-        return {
-          id: 'uuid-1',
-          email: 'john@doe.com',
-          metadata: '{}',
-          created_at: 1500000000,
-          disabled_at: null,
+        return (params) => {
+          assert.deepEqual(params, { id: '1' })
+          return undefined
         }
       },
       params: {
@@ -180,39 +265,35 @@ describe('SchemQl - paramsSchema related', () => {
       paramsSchema: zUserDb.pick({ id: true }).transform(() => ({ id: '1' })),
     })('SELECT * FROM users WHERE id = :id')
 
-    assert.deepEqual(result, {
-      id: 'uuid-1',
-      email: 'john@doe.com',
-      metadata: '{}',
-      created_at: 1500000000,
-      disabled_at: null,
-    })
+    assert.deepEqual(result, undefined)
   })
 })
 
 describe('SchemQl - sql literal', () => {
   it('should return the expected result', async () => {
     const result = await schemQlUnconfigured.first({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => {
         assert.strictEqual(
           sql,
           normalizeString(`
             SELECT
               *,
-              LENGTH(id) AS length_id
+              LENGTH(users.id) AS length_id
             FROM users
             WHERE
-              id = :id
+              users.id = :id
           `)
         )
-        assert.deepEqual(params, { id: 'uuid-1' })
-        return {
-          id: 'uuid-1',
-          email: 'john@doe.com',
-          metadata: '{}',
-          created_at: 1500000000,
-          disabled_at: null,
-          length_id: 6,
+        return (params) => {
+          assert.deepEqual(params, { id: 'uuid-1' })
+          return {
+            id: 'uuid-1',
+            email: 'john@doe.com',
+            metadata: '{}',
+            created_at: 1500000000,
+            disabled_at: null,
+            length_id: 6,
+          }
         }
       },
       resultSchema: zUserDb.and(z.object({ length_id: z.number() })),
@@ -224,10 +305,10 @@ describe('SchemQl - sql literal', () => {
       normalizeString(s.sql`
           SELECT
             *,
-            LENGTH(${'@users.id-'}) AS ${'$length_id'}
+            LENGTH(${'@users.id'}) AS ${'$length_id'}
           FROM ${'@users'}
           WHERE
-            ${'@users.id-'} = ${':id'}
+            ${'@users.id'} = ${':id'}
     `)
     )
 
@@ -245,7 +326,7 @@ describe('SchemQl - sql literal', () => {
 
   it('should return the expected result, undefined case', async () => {
     const result = await schemQlUnconfigured.first({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => {
         assert.strictEqual(
           sql,
           normalizeString(`
@@ -257,8 +338,10 @@ describe('SchemQl - sql literal', () => {
               users.id = :id
           `)
         )
-        assert.deepEqual(params, { id: 'uuid-1' })
-        return undefined
+        return (params) => {
+          assert.deepEqual(params, { id: 'uuid-1' })
+          return undefined
+        }
       },
       resultSchema: zUserDb.and(z.object({ length_id: z.number() })).optional(),
       params: {
@@ -283,7 +366,7 @@ describe('SchemQl - sql literal', () => {
 describe('SchemQl - sql literal advanced', () => {
   it('should return the expected result - with object helper', async () => {
     const result = await schemQlUnconfigured.first({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => {
         assert.strictEqual(
           sql,
           normalizeString(`
@@ -298,19 +381,21 @@ describe('SchemQl - sql literal advanced', () => {
             RETURNING *
           `)
         )
-        assert.deepEqual(params, { id: 'uuid-2', email: 'jane@doe.com', metadata: '{"role":"admin"}' })
-        return {
-          id: 'uuid-2',
-          email: 'jane@doe.com',
-          metadata: '{"role":"admin"}',
-          created_at: 1500000000,
-          disabled_at: null,
+        return (params) => {
+          assert.deepEqual(params, { id: 'uuid-3', email: 'joke@doe.com', metadata: '{"role":"admin"}' })
+          return {
+            id: 'uuid-3',
+            email: 'joke@doe.com',
+            metadata: '{"role":"admin"}',
+            created_at: 1500000000,
+            disabled_at: null,
+          }
         }
       },
       resultSchema: zUserDb,
       params: {
-        id: 'uuid-2',
-        email: 'jane@doe.com',
+        id: 'uuid-3',
+        email: 'joke@doe.com',
         metadata: { role: 'admin' },
       },
       paramsSchema: zUserDb.pick({ id: true, email: true, metadata: true }),
@@ -329,8 +414,8 @@ describe('SchemQl - sql literal advanced', () => {
     )
 
     assert.deepEqual(result, {
-      id: 'uuid-2',
-      email: 'jane@doe.com',
+      id: 'uuid-3',
+      email: 'joke@doe.com',
       metadata: {
         role: 'admin',
       },
@@ -341,13 +426,13 @@ describe('SchemQl - sql literal advanced', () => {
 
   it('should return the expected result - with sql helper', async () => {
     const result = await schemQlUnconfigured.first({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => {
         assert.strictEqual(
           sql,
           normalizeString(`
             UPDATE users
             SET
-              metadata = json_set(users.metadata,
+              metadata = JSON_SET(users.metadata,
                 '$.email_variant', :emailVariant,
                 '$.email_verified_at', :emailVerifiedAt
               )
@@ -356,13 +441,15 @@ describe('SchemQl - sql literal advanced', () => {
             RETURNING *
           `)
         )
-        assert.deepEqual(params, { role: 'admin', emailVariant: 'jane+variant@doe.com', emailVerifiedAt: 1500000000 })
-        return {
-          id: 'uuid-2',
-          email: 'jane@doe.com',
-          metadata: '{"role":"admin","email_variant":"jane+variant@doe.com","email_verified_at":1500000000}',
-          created_at: 1500000000,
-          disabled_at: null,
+        return (params) => {
+          assert.deepEqual(params, { role: 'admin', emailVariant: 'jane+variant@doe.com', emailVerifiedAt: 1500000000 })
+          return {
+            id: 'uuid-2',
+            email: 'jane@doe.com',
+            metadata: '{"role":"admin","email_variant":"jane+variant@doe.com","email_verified_at":1500000000}',
+            created_at: 1500000000,
+            disabled_at: null,
+          }
         }
       },
       resultSchema: zUserDb,
@@ -376,7 +463,7 @@ describe('SchemQl - sql literal advanced', () => {
       normalizeString(s.sql`
         UPDATE ${'@users'}
         SET
-          ${'@users.metadata-'} = json_set(${'@users.metadata'},
+          ${'@users.metadata-'} = JSON_SET(${'@users.metadata'},
             ${'@users.metadata $.email_variant'}, ${':emailVariant'},
             ${'@users.metadata $.email_verified_at'}, ${':emailVerifiedAt'}
           )
@@ -401,7 +488,7 @@ describe('SchemQl - sql literal advanced', () => {
 
   it('should return the expected result - with sqlCond & sqlRaw helpers', async () => {
     const result = await schemQlUnconfigured.all({
-      queryFn: (sql, params) => {
+      queryFn: (sql) => {
         assert.strictEqual(
           sql,
           normalizeString(`
@@ -422,11 +509,13 @@ describe('SchemQl - sql literal advanced', () => {
             LEFT JOIN sessions s ON s.id = _us.id
           `)
         )
-        assert.deepEqual(params, {
-          cursor: 'uuid-1',
-          limit: 10,
-        })
-        return []
+        return (params) => {
+          assert.deepEqual(params, {
+            cursor: 'uuid-1',
+            limit: 10,
+          })
+          return []
+        }
       },
       resultSchema: z.object({ user_id: zUserDb.shape.id, session_id: zSessionDb.shape.id }).array(),
       params: {

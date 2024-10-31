@@ -11,6 +11,7 @@
     "schema",
     "validation",
     "type-safe",
+    "typesafe",
     "autocomplete",
     "raw-sql",
     "zod",
@@ -50,6 +51,7 @@
   ],
   "scripts": {
     "biome": "biome check --write ./src ./tests",
+    "biome:ci": "biome ci ./src ./tests",
     "test": "tsx --test ./tests/**/*.ts",
     "build": "pkgroll --clean-dist --minify --src src/"
   },

@@ -1,4 +1,4 @@
-import { parseJsonPreprocessor } from '@/index'
+import { parseJsonPreprocessor } from '@/utils'
 import { z } from 'zod'
 
 export const zUserDb = z.object({
