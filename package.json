@@ -1,6 +1,6 @@
 {
   "name": "@a2lix/schemql",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A lightweight TypeScript library that enhances your SQL workflow by combining raw SQL with targeted type safety and schema validation",
   "license": "MIT",
   "keywords": [
