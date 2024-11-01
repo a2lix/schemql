@@ -336,7 +336,7 @@ export class SchemQl<DB> {
 const stringifyObjectParams = (params: Record<string, any>) =>
   Object.entries(params).reduce(
     (acc, [key, value]) => {
-      acc[key] = typeof value === 'object' ? JSON.stringify(value) : value
+      acc[key] = value !== null && typeof value === 'object' ? JSON.stringify(value) : value
       return acc
     },
     {} as Record<string, any>
