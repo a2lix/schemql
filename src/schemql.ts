@@ -79,18 +79,15 @@ type SchemQlSqlHelper<TResultSchema extends z.ZodTypeAny | undefined, TParams ex
 }
 
 type SchemQlOptions = {
-  queryFns?: Partial<QueryFns>
+  adapter: SchemQlAdapter
   shouldStringifyObjectParams?: boolean
 }
 
-type QueryExecutorParams =
-  | Record<string, any>
-  | Record<string, any>[]
-  | GeneratorFn<Record<string, any>>
-  | AsyncGeneratorFn<Record<string, any>>
-
-type QueryFns = Record<'first' | 'firstOrThrow' | 'all', QueryFn<unknown>> & {
-  iterate: IterativeQueryFn<unknown>
+export interface SchemQlAdapter {
+  queryFirst: QueryFn<unknown>
+  queryFirstOrThrow: QueryFn<unknown>
+  queryAll: QueryFn<unknown>
+  queryIterate: IterativeQueryFn<unknown>
 }
 type QueryFn<TQueryResult, TParams = Record<string, any> | undefined> = (
   sql: string
@@ -99,7 +96,7 @@ type IterativeQueryFn<TQueryResult, TParams = Record<string, any> | undefined> =
   sql: string
 ) => (params?: TParams) => AsyncIterable<TQueryResult>
 
-type IsIterativeExecution<TMethod extends keyof QueryFns, TParams> = TMethod extends 'iterate'
+type IsIterativeExecution<TMethod extends 'query' | 'iterate', TParams> = TMethod extends 'iterate'
   ? true
   : TParams extends any[]
     ? true
@@ -108,8 +105,9 @@ type IsIterativeExecution<TMethod extends keyof QueryFns, TParams> = TMethod ext
       : TParams extends GeneratorFn<any>
         ? true
         : false
+
 type QueryResult<
-  TMethod extends keyof QueryFns,
+  TMethod extends 'query' | 'iterate',
   TQueryResult,
   TResultSchema extends z.ZodTypeAny | undefined,
   TParams,
@@ -139,7 +137,7 @@ type ExecutionParams<TParams, TParamsSchema extends z.ZodTypeAny | undefined> = 
         ? z.infer<TParamsSchema>
         : TParams
 
-type QueryExecutor<TMethod extends keyof QueryFns, DB> = <
+type QueryExecutor<TMethod extends 'query' | 'iterate', DB> = <
   TQueryResult = unknown,
   TParams extends QueryExecutorParams = QueryExecutorParams,
   TParamsSchema extends z.ZodTypeAny | undefined = undefined,
@@ -158,32 +156,38 @@ type SchemQlExecOptions<
   TParamsSchema extends z.ZodTypeAny | undefined = undefined,
   TResultSchema extends z.ZodTypeAny | undefined = undefined,
 > = {
-  queryFn?: QueryFn<TQueryResult>
+  queryFn: QueryFn<TQueryResult> | IterativeQueryFn<TQueryResult>
   params?: ExecutionParams<TParams, TParamsSchema>
   paramsSchema?: TParamsSchema
   resultSchema?: TResultSchema
 }
 
 export class SchemQl<DB> {
-  constructor(private readonly options: SchemQlOptions = {}) {}
+  public first: QueryExecutor<'query', DB>
+  public firstOrThrow: QueryExecutor<'query', DB>
+  public all: QueryExecutor<'query', DB>
+  public iterate: QueryExecutor<'iterate', DB>
 
-  private createQueryExecutor = <TMethod extends keyof QueryFns, TQueryResult>(
-    method: TMethod
-  ): QueryExecutor<TMethod, DB> => {
+  constructor(private readonly options: SchemQlOptions) {
+    this.first = this.createQueryExecutor(this.options.adapter.queryFirst)
+    this.firstOrThrow = this.createQueryExecutor(this.options.adapter.queryFirstOrThrow)
+    this.all = this.createQueryExecutor(this.options.adapter.queryAll)
+    this.iterate = this.createQueryExecutor(this.options.adapter.queryIterate, true)
+  }
+
+  private createQueryExecutor = <TQueryFn extends QueryFn<unknown> | IterativeQueryFn<unknown>>(
+    queryFn: TQueryFn,
+    isIterate = false
+  ): QueryExecutor<TQueryFn extends IterativeQueryFn<unknown> ? 'iterate' : 'query', DB> => {
     return (options) => async (sqlOrBuilderFn) => {
       const sql = typeof sqlOrBuilderFn === 'function' ? sqlOrBuilderFn(this.createSqlHelper()) : sqlOrBuilderFn
-
-      const queryFn = options.queryFn ?? this.options.queryFns?.[method]
-      if (!queryFn) {
-        throw new Error(`No queryFn provided for method ${method}`)
-      }
 
       // Generator params?
       if (typeof options.params === 'function') {
         const preparedQuery = await queryFn(sql)
 
         const executeAndParseResult = async (params: Record<string, any>) => {
-          const parsedParams = this.parseAndStringifyParams({ ...options, params } as SchemQlExecOptions<TQueryResult>)
+          const parsedParams = this.parseAndStringifyParams({ ...options, params } as SchemQlExecOptions<unknown>)
           const result = await preparedQuery(parsedParams)
           return options.resultSchema?.parse(result) ?? result
         }
@@ -215,9 +219,9 @@ export class SchemQl<DB> {
       const parsedParams = this.parseAndStringifyParams(options)
 
       // Iterate special fn?
-      if (method === 'iterate') {
+      if (isIterate) {
         return (async function* () {
-          for await (const result of queryFn(sql)(parsedParams) as AsyncIterable<TQueryResult>) {
+          for await (const result of queryFn(sql)(parsedParams) as AsyncIterable<unknown>) {
             yield options.resultSchema?.parse(result) ?? result
           }
         })()
@@ -326,11 +330,6 @@ export class SchemQl<DB> {
 
     return String(value)
   }
-
-  public first: QueryExecutor<'first', DB> = this.createQueryExecutor('first')
-  public firstOrThrow: QueryExecutor<'firstOrThrow', DB> = this.createQueryExecutor('firstOrThrow')
-  public all: QueryExecutor<'all', DB> = this.createQueryExecutor('all')
-  public iterate: QueryExecutor<'iterate', DB> = this.createQueryExecutor('iterate')
 }
 
 const stringifyObjectParams = (params: Record<string, any>) =>
