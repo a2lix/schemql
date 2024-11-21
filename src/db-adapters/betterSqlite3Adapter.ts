@@ -14,7 +14,7 @@ export class BetterSqlite3Adapter implements SchemQlAdapter {
     this.db.pragma('journal_mode = WAL')
   }
 
-  public queryAll<TResult, TParams extends Record<string, any>>(sql: string) {
+  public queryAll = <TResult, TParams extends Record<string, any>>(sql: string) => {
     const stmt = this.db.prepare(sql)
 
     return (params?: TParams): TResult[] => {
@@ -26,7 +26,7 @@ export class BetterSqlite3Adapter implements SchemQlAdapter {
     }
   }
 
-  public queryFirst<TResult, TParams extends Record<string, any>>(sql: string) {
+  public queryFirst = <TResult, TParams extends Record<string, any>>(sql: string) => {
     const stmt = this.db.prepare(sql)
 
     return (params?: TParams): TResult | undefined => {
@@ -38,7 +38,7 @@ export class BetterSqlite3Adapter implements SchemQlAdapter {
     }
   }
 
-  public queryFirstOrThrow<TResult, TParams extends Record<string, any>>(sql: string) {
+  public queryFirstOrThrow = <TResult, TParams extends Record<string, any>>(sql: string) => {
     const prepareFirst = this.queryFirst<TResult, TParams>(sql)
 
     return (params?: TParams): NonNullable<TResult> => {
@@ -50,7 +50,7 @@ export class BetterSqlite3Adapter implements SchemQlAdapter {
     }
   }
 
-  public queryIterate<TResult, TParams extends Record<string, any>>(sql: string) {
+  public queryIterate = <TResult, TParams extends Record<string, any>>(sql: string) => {
     const stmt = this.db.prepare(sql)
 
     return (params?: TParams) => {
@@ -58,7 +58,7 @@ export class BetterSqlite3Adapter implements SchemQlAdapter {
     }
   }
 
-  public close() {
+  public close = () => {
     this.db.close()
   }
 }

@@ -5,7 +5,7 @@ import type { D1Database } from '@cloudflare/workers-types'
 export class D1Adapter implements SchemQlAdapter {
   public constructor(private db: D1Database) {}
 
-  public queryAll<TResult, TParams extends Record<string, any>>(sql: string) {
+  public queryAll = <TResult, TParams extends Record<string, any>>(sql: string) => {
     const { sql: anonymousSql, paramsOrder } = this.transformToAnonymousParams(sql)
     const stmt = this.db.prepare(anonymousSql)
 
@@ -19,7 +19,7 @@ export class D1Adapter implements SchemQlAdapter {
     }
   }
 
-  public queryFirst<TResult, TParams extends Record<string, any>>(sql: string) {
+  public queryFirst = <TResult, TParams extends Record<string, any>>(sql: string) => {
     const { sql: anonymousSql, paramsOrder } = this.transformToAnonymousParams(sql)
     const stmt = this.db.prepare(anonymousSql)
 
@@ -33,7 +33,7 @@ export class D1Adapter implements SchemQlAdapter {
     }
   }
 
-  public queryFirstOrThrow<TResult, TParams extends Record<string, any>>(sql: string) {
+  public queryFirstOrThrow = <TResult, TParams extends Record<string, any>>(sql: string) => {
     const prepareFirst = this.queryFirst<TResult, TParams>(sql)
 
     return async (params?: TParams) => {
@@ -45,15 +45,15 @@ export class D1Adapter implements SchemQlAdapter {
     }
   }
 
-  public queryIterate<TResult, TParams extends Record<string, any>>(sql: string) {
+  public queryIterate = <TResult, TParams extends Record<string, any>>(sql: string) => {
     return (params?: TParams) => {
       throw new Error('Not implemented')
     }
   }
 
-  public close() {}
+  public close = () => {}
 
-  private transformToAnonymousParams(sql: string) {
+  private transformToAnonymousParams = (sql: string) => {
     const paramsOrder: string[] = []
 
     const anonymousSql = sql.replace(/:([a-zA-Z0-9_]+)/g, (_, paramName) => {

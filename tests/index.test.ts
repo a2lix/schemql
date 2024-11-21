@@ -33,12 +33,12 @@ const fixtureUsers = new Map([
 
 class SyncAdapter implements SchemQlAdapter {
   queryFirst = <T>(sql: string) => {
-    return (params?: any) => {
+    return (params?: any): T | undefined => {
       throw new Error('Not implemented')
     }
   }
   queryAll = <T>(sql: string) => {
-    return (params?: any) => {
+    return (params?: any): T[] => {
       throw new Error('Not implemented')
     }
   }
@@ -48,24 +48,27 @@ class SyncAdapter implements SchemQlAdapter {
     }
   }
   queryIterate = <T>(sql: string) => {
-    return (params?: any) => {
+    return (params?: any): (() => Generator<T, void, unknown>) => {
       throw new Error('Not implemented')
     }
   }
 }
 class AsyncAdapter implements SchemQlAdapter {
   queryFirst = <T>(sql: string) => {
-    return async (params?: any): Promise<T> => {
+    return async (_params?: Record<string, unknown>): Promise<T> => {
+      await Promise.resolve()
       throw new Error('Not implemented')
     }
   }
   queryAll = <T>(sql: string) => {
     return async (params?: any): Promise<T[]> => {
+      await Promise.resolve()
       throw new Error('Not implemented')
     }
   }
   queryFirstOrThrow = <T>(sql: string) => {
     return async (params?: any): Promise<T> => {
+      await Promise.resolve()
       throw new Error('Not implemented')
     }
   }
@@ -112,8 +115,8 @@ describe('SchemQl - queryFn related', () => {
       adapter: new (class extends SyncAdapter {
         override queryFirst = <T>(sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
-          return (params?: any) => {
-            return fixtureUsers.get(params?.id)
+          return (params?: any): T | undefined => {
+            return fixtureUsers.get(params?.id) as T | undefined
           }
         }
       })(),
@@ -150,8 +153,8 @@ describe('SchemQl - queryFn related', () => {
       adapter: new (class extends SyncAdapter {
         override queryFirst = <T>(sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
-          return (params?: any) => {
-            return fixtureUsers.get(params?.id)
+          return (params?: any): T | undefined => {
+            return fixtureUsers.get(params?.id) as T | undefined
           }
         }
       })(),
@@ -185,7 +188,7 @@ describe('SchemQl - queryFn related', () => {
         override queryFirst = <T>(sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
           return (params?: any) => {
-            return fixtureUsers.get(params?.id)
+            return fixtureUsers.get(params?.id) as T | undefined
           }
         }
       })(),
@@ -220,8 +223,8 @@ describe('SchemQl - queryFn related', () => {
           assert.strictEqual(sql, 'SELECT * FROM users')
           return (params?: any) =>
             function* () {
-              yield fixtureUsers.get('uuid-1')
-              yield fixtureUsers.get('uuid-2')
+              yield fixtureUsers.get('uuid-1') as T
+              yield fixtureUsers.get('uuid-2') as T
             }
         }
       })(),
@@ -249,8 +252,8 @@ describe('SchemQl - resultSchema related', () => {
       adapter: new (class extends SyncAdapter {
         override queryAll = <T>(sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users')
-          return (params?: any) => {
-            return fixtureUsers.values().toArray()
+          return (params?: any): T[] => {
+            return fixtureUsers.values().toArray() as T[]
           }
         }
       })(),
@@ -285,9 +288,9 @@ describe('SchemQl - paramsSchema related', () => {
       adapter: new (class extends SyncAdapter {
         override queryFirst = <T>(sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users WHERE id = :id')
-          return (params?: any) => {
+          return (params?: any): T | undefined => {
             assert.deepEqual(params, { id: '1' })
-            return undefined
+            return undefined as T | undefined
           }
         }
       })(),
@@ -320,7 +323,7 @@ describe('SchemQl - sql literal', () => {
                 users.id = :id
             `)
           )
-          return (params?: any) => {
+          return (params?: any): T | undefined => {
             assert.deepEqual(params, { id: 'uuid-1' })
             return {
               id: 'uuid-1',
@@ -329,7 +332,7 @@ describe('SchemQl - sql literal', () => {
               created_at: 1500000000,
               disabled_at: null,
               length_id: 6,
-            }
+            } as T | undefined
           }
         }
       })(),
@@ -435,7 +438,7 @@ describe('SchemQl - sql literal advanced', () => {
               metadata: '{"role":"admin"}',
               created_at: 1500000000,
               disabled_at: null,
-            }
+            } as T | undefined
           }
         }
       })(),
@@ -504,7 +507,7 @@ describe('SchemQl - sql literal advanced', () => {
               metadata: '{"role":"admin","email_variant":"jane+variant@doe.com","email_verified_at":1500000000}',
               created_at: 1500000000,
               disabled_at: null,
-            }
+            } as T | undefined
           }
         }
       })(),
