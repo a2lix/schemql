@@ -275,8 +275,8 @@ const iterResults = await schemQl.iterate({
 | `${'@table1'}`                     | `table1`                     | **Table Selection**: Prefix `@` eases table selection/validation |
 | `${'@table1.col1'}`                | `table1.col1`                | **Column Selection**: Use `@` for table and column validation |
 | `${'@table1.col1-'}`               | `col1`                       | Final `-` excludes table name (useful if table is aliased) |
-| `${'@table1.col1 ->jsonpath1'}`    | `table1.col1->'jsonpath1'`   | **JSON Field Selection**: Use `->` for JSON paths |
-| `${'@table1.col1 ->>jsonpath1'}`   | `table1.col1->>'jsonpath1'`  | JSON field (raw) with `->>` syntax |
+| `${'@table1.col1 ->jsonpath1'}`    | `table1.col1 ->'jsonpath1'`  | **JSON Field Selection**: Use `->` for JSON paths |
+| `${'@table1.col1 ->>jsonpath1'}`   | `table1.col1 ->>'jsonpath1'` | JSON field (raw) with `->>` syntax |
 | `${'@table1.col1 $.jsonpath1'}`    | `'$.jsonpath1'`              | JSONPath with `$` prefix |
 | `${'$resultCol1'}`                 | `resultCol1`                 | **Result Selection**: `$` prefix targets resultSchema fields |
 | `${':param1'}`                     | `:param1`                    | **Parameter Selection**: `:` prefix eases parameter validation |

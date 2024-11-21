@@ -31,51 +31,92 @@ const fixtureUsers = new Map([
   ],
 ])
 
-const dumbAdapter: SchemQlAdapter = {
-  queryFirst: (sql: string) => {
-    throw new Error('Not implemented')
-  },
-  queryAll: (sql: string) => {
-    throw new Error('Not implemented')
-  },
-  queryFirstOrThrow: (sql: string) => {
-    throw new Error('Not implemented')
-  },
-  queryIterate: (sql: string) => {
-    throw new Error('Not implemented')
-  },
+class SyncAdapter implements SchemQlAdapter {
+  queryFirst = <T>(sql: string) => {
+    return (params?: any) => {
+      throw new Error('Not implemented')
+    }
+  }
+  queryAll = <T>(sql: string) => {
+    return (params?: any) => {
+      throw new Error('Not implemented')
+    }
+  }
+  queryFirstOrThrow = <T>(sql: string) => {
+    return (params?: any) => {
+      throw new Error('Not implemented')
+    }
+  }
+  queryIterate = <T>(sql: string) => {
+    return (params?: any) => {
+      throw new Error('Not implemented')
+    }
+  }
+}
+class AsyncAdapter implements SchemQlAdapter {
+  queryFirst = <T>(sql: string) => {
+    return async (params?: any): Promise<T> => {
+      throw new Error('Not implemented')
+    }
+  }
+  queryAll = <T>(sql: string) => {
+    return async (params?: any): Promise<T[]> => {
+      throw new Error('Not implemented')
+    }
+  }
+  queryFirstOrThrow = <T>(sql: string) => {
+    return async (params?: any): Promise<T> => {
+      throw new Error('Not implemented')
+    }
+  }
+  queryIterate = <T>(sql: string) => {
+    return (params?: any): (() => AsyncGenerator<T, void, unknown>) => {
+      throw new Error('Not implemented')
+    }
+  }
 }
 
 describe('SchemQl - queryFn related', () => {
-  it('should return the expected result with async queryFn', async () => {
+  it('should return the expected result with async queryFns', async () => {
     const schemQl = new SchemQl<DB>({
-      adapter: {
-        ...dumbAdapter,
-        queryAll: (sql) => {
+      adapter: new (class extends AsyncAdapter {
+        override queryAll = <T>(sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users')
-          return async (params) => {
-            return await Promise.resolve(fixtureUsers.values().toArray())
+          return async (params?: any): Promise<T[]> => {
+            return (await fixtureUsers.values().toArray()) as T[]
           }
-        },
-      },
+        }
+        override queryIterate = <T>(sql: string) => {
+          assert.strictEqual(sql, 'SELECT * FROM users')
+          return (params?: any) =>
+            async function* () {
+              yield (await fixtureUsers.get('uuid-1')) as T
+              yield (await fixtureUsers.get('uuid-2')) as T
+            }
+        }
+      })(),
       shouldStringifyObjectParams: true,
     })
     const results = await schemQl.all({})('SELECT * FROM users')
-
     assert.deepEqual(results, fixtureUsers.values().toArray())
+
+    const iterResults = await schemQl.iterate({})('SELECT * FROM users')
+    const res1 = await iterResults?.next()
+    const res2 = await iterResults?.next()
+    assert.deepEqual(res1.value, fixtureUsers.get('uuid-1'))
+    assert.deepEqual(res2.value, fixtureUsers.get('uuid-2'))
   })
 
   it('should return the expected result with array params', async () => {
     const schemQl = new SchemQl<DB>({
-      adapter: {
-        ...dumbAdapter,
-        queryFirst: (sql) => {
+      adapter: new (class extends SyncAdapter {
+        override queryFirst = <T>(sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
-          return (params) => {
+          return (params?: any) => {
             return fixtureUsers.get(params?.id)
           }
-        },
-      },
+        }
+      })(),
       shouldStringifyObjectParams: true,
     })
     const iterResults = await schemQl.first({
@@ -106,15 +147,14 @@ describe('SchemQl - queryFn related', () => {
 
   it('should return the expected result with generator params', async () => {
     const schemQl = new SchemQl<DB>({
-      adapter: {
-        ...dumbAdapter,
-        queryFirst: (sql) => {
+      adapter: new (class extends SyncAdapter {
+        override queryFirst = <T>(sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
-          return (params) => {
+          return (params?: any) => {
             return fixtureUsers.get(params?.id)
           }
-        },
-      },
+        }
+      })(),
       shouldStringifyObjectParams: true,
     })
     const iterResults = await schemQl.first({
@@ -141,15 +181,14 @@ describe('SchemQl - queryFn related', () => {
 
   it('should return the expected result with async generator params', async () => {
     const schemQl = new SchemQl<DB>({
-      adapter: {
-        ...dumbAdapter,
-        queryFirst: (sql) => {
+      adapter: new (class extends SyncAdapter {
+        override queryFirst = <T>(sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
-          return (params) => {
+          return (params?: any) => {
             return fixtureUsers.get(params?.id)
           }
-        },
-      },
+        }
+      })(),
       shouldStringifyObjectParams: true,
     })
     const iterResults = await schemQl.first({
@@ -176,16 +215,16 @@ describe('SchemQl - queryFn related', () => {
 
   it('should return the expected result with iterate method', async () => {
     const schemQl = new SchemQl<DB>({
-      adapter: {
-        ...dumbAdapter,
-        queryFirst: (sql) => {
+      adapter: new (class extends SyncAdapter {
+        override queryIterate = <T>(sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users')
-          return function* (params) {
-            yield fixtureUsers.get('uuid-1')
-            yield fixtureUsers.get('uuid-2')
-          }
-        },
-      },
+          return (params?: any) =>
+            function* () {
+              yield fixtureUsers.get('uuid-1')
+              yield fixtureUsers.get('uuid-2')
+            }
+        }
+      })(),
       shouldStringifyObjectParams: true,
     })
     const iterResults = await schemQl.iterate({
@@ -207,15 +246,14 @@ describe('SchemQl - queryFn related', () => {
 describe('SchemQl - resultSchema related', () => {
   it('should return the expected result, parsed by resultSchema if provided', async () => {
     const schemQl = new SchemQl<DB>({
-      adapter: {
-        ...dumbAdapter,
-        queryAll: (sql) => {
+      adapter: new (class extends SyncAdapter {
+        override queryAll = <T>(sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users')
-          return (params) => {
+          return (params?: any) => {
             return fixtureUsers.values().toArray()
           }
-        },
-      },
+        }
+      })(),
       shouldStringifyObjectParams: true,
     })
     const results = await schemQl.all({
@@ -244,16 +282,15 @@ describe('SchemQl - resultSchema related', () => {
 describe('SchemQl - paramsSchema related', () => {
   it('should return the expected result, params parsed by paramsSchema if provided', async () => {
     const schemQl = new SchemQl<DB>({
-      adapter: {
-        ...dumbAdapter,
-        queryFirst: (sql) => {
+      adapter: new (class extends SyncAdapter {
+        override queryFirst = <T>(sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users WHERE id = :id')
-          return (params) => {
+          return (params?: any) => {
             assert.deepEqual(params, { id: '1' })
             return undefined
           }
-        },
-      },
+        }
+      })(),
       shouldStringifyObjectParams: true,
     })
     const result = await schemQl.first({
@@ -270,9 +307,8 @@ describe('SchemQl - paramsSchema related', () => {
 describe('SchemQl - sql literal', () => {
   it('should return the expected result', async () => {
     const schemQl = new SchemQl<DB>({
-      adapter: {
-        ...dumbAdapter,
-        queryFirst: (sql) => {
+      adapter: new (class extends SyncAdapter {
+        override queryFirst = <T>(sql: string) => {
           assert.strictEqual(
             sql,
             normalizeString(`
@@ -284,7 +320,7 @@ describe('SchemQl - sql literal', () => {
                 users.id = :id
             `)
           )
-          return (params) => {
+          return (params?: any) => {
             assert.deepEqual(params, { id: 'uuid-1' })
             return {
               id: 'uuid-1',
@@ -295,8 +331,8 @@ describe('SchemQl - sql literal', () => {
               length_id: 6,
             }
           }
-        },
-      },
+        }
+      })(),
       shouldStringifyObjectParams: true,
     })
     const result = await schemQl.first({
@@ -330,9 +366,8 @@ describe('SchemQl - sql literal', () => {
 
   it('should return the expected result, undefined case', async () => {
     const schemQl = new SchemQl<DB>({
-      adapter: {
-        ...dumbAdapter,
-        queryFirst: (sql) => {
+      adapter: new (class extends SyncAdapter {
+        override queryFirst = <T>(sql: string) => {
           assert.strictEqual(
             sql,
             normalizeString(`
@@ -344,12 +379,12 @@ describe('SchemQl - sql literal', () => {
                 users.id = :id
             `)
           )
-          return (params) => {
+          return (params?: any) => {
             assert.deepEqual(params, { id: 'uuid-1' })
             return undefined
           }
-        },
-      },
+        }
+      })(),
       shouldStringifyObjectParams: true,
     })
     const result = await schemQl.first({
@@ -376,9 +411,8 @@ describe('SchemQl - sql literal', () => {
 describe('SchemQl - sql literal advanced', () => {
   it('should return the expected result - with object helper', async () => {
     const schemQl = new SchemQl<DB>({
-      adapter: {
-        ...dumbAdapter,
-        queryFirst: (sql) => {
+      adapter: new (class extends SyncAdapter {
+        override queryFirst = <T>(sql: string) => {
           assert.strictEqual(
             sql,
             normalizeString(`
@@ -393,7 +427,7 @@ describe('SchemQl - sql literal advanced', () => {
               RETURNING *
             `)
           )
-          return (params) => {
+          return (params?: any) => {
             assert.deepEqual(params, { id: 'uuid-3', email: 'joke@doe.com', metadata: '{"role":"admin"}' })
             return {
               id: 'uuid-3',
@@ -403,8 +437,8 @@ describe('SchemQl - sql literal advanced', () => {
               disabled_at: null,
             }
           }
-        },
-      },
+        }
+      })(),
       shouldStringifyObjectParams: true,
     })
     const result = await schemQl.first({
@@ -442,9 +476,8 @@ describe('SchemQl - sql literal advanced', () => {
 
   it('should return the expected result - with sql helper', async () => {
     const schemQl = new SchemQl<DB>({
-      adapter: {
-        ...dumbAdapter,
-        queryFirst: (sql) => {
+      adapter: new (class extends SyncAdapter {
+        override queryFirst = <T>(sql: string) => {
           assert.strictEqual(
             sql,
             normalizeString(`
@@ -459,7 +492,7 @@ describe('SchemQl - sql literal advanced', () => {
             RETURNING *
           `)
           )
-          return (params) => {
+          return (params?: any) => {
             assert.deepEqual(params, {
               role: 'admin',
               emailVariant: 'jane+variant@doe.com',
@@ -473,8 +506,8 @@ describe('SchemQl - sql literal advanced', () => {
               disabled_at: null,
             }
           }
-        },
-      },
+        }
+      })(),
       shouldStringifyObjectParams: true,
     })
     const result = await schemQl.first({
@@ -514,9 +547,8 @@ describe('SchemQl - sql literal advanced', () => {
 
   it('should return the expected result - with sqlCond & sqlRaw helpers', async () => {
     const schemQl = new SchemQl<DB>({
-      adapter: {
-        ...dumbAdapter,
-        queryAll: (sql) => {
+      adapter: new (class extends SyncAdapter {
+        override queryAll = <T>(sql: string) => {
           assert.strictEqual(
             sql,
             normalizeString(`
@@ -537,15 +569,15 @@ describe('SchemQl - sql literal advanced', () => {
               LEFT JOIN sessions s ON s.id = _us.id
             `)
           )
-          return (params) => {
+          return (params?: any) => {
             assert.deepEqual(params, {
               cursor: 'uuid-1',
               limit: 10,
             })
             return []
           }
-        },
-      },
+        }
+      })(),
       shouldStringifyObjectParams: true,
     })
     const result = await schemQl.all({

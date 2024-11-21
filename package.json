@@ -44,6 +44,14 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./db-adapters/better-sqlite3": {
+      "import": "./dist/db-adapters/betterSqlite3Adapter.mjs",
+      "require": "./dist/db-adapters/betterSqlite3Adapter.cjs"
+    },
+    "./db-adapters/d1": {
+      "import": "./dist/db-adapters/d1Adapter.mjs",
+      "require": "./dist/db-adapters/d1Adapter.cjs"
     }
   },
   "files": [
@@ -60,10 +68,18 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@types/node": "^22.8.1",
+    "@types/node": "^22.9.1",
     "pkgroll": "^2.5.1",
     "ts-node": "^10.9.2",
-    "tsx": "^4.19.1",
+    "tsx": "^4.19.2",
     "typescript": "^5.6.3"
+  },
+  "peerDependencies": {
+    "@cloudflare/workers-types": "^4.20241112.0",
+    "better-sqlite3": "^8.7.0"
+  },
+  "optionalDependencies": {
+    "@cloudflare/workers-types": "^4.20241112.0",
+    "better-sqlite3": "^8.7.0"
   }
 }
