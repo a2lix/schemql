@@ -1,11 +1,11 @@
 import type { z } from 'zod'
 
 // Exported
-export interface SchemQlAdapter {
-  queryFirst: QueryFn<unknown>
-  queryFirstOrThrow: QueryFn<unknown>
-  queryAll: QueryFn<unknown>
-  queryIterate: IterativeQueryFn<unknown>
+export interface SchemQlAdapter<T = unknown> {
+  queryFirst: QueryFn<T | undefined>
+  queryFirstOrThrow: QueryFn<T>
+  queryAll: QueryFn<T[]>
+  queryIterate: IterativeQueryFn<T>
 }
 
 type QueryFn<TQueryResult, TParams = Record<string, any> | undefined> = (

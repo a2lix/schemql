@@ -1,4 +1,4 @@
-import { BaseDbAdapterError, DbAdapterErrorCode } from '@/db-adapters/baseDbAdapterError'
+import { AdapterErrorCode, BaseAdapterError } from '@/adapters/baseAdapterError'
 import type { SchemQlAdapter } from '@/schemql'
 // @ts-ignore
 import SQLite from 'better-sqlite3'
@@ -21,7 +21,7 @@ export class BetterSqlite3Adapter implements SchemQlAdapter {
       try {
         return params ? stmt.all(params) : stmt.all()
       } catch (e) {
-        throw DbAdapterError.createFromBetterSqlite3(e)
+        throw SchemQlAdapterError.createFromBetterSqlite3(e)
       }
     }
   }
@@ -33,7 +33,7 @@ export class BetterSqlite3Adapter implements SchemQlAdapter {
       try {
         return stmt.get(params)
       } catch (e) {
-        throw DbAdapterError.createFromBetterSqlite3(e)
+        throw SchemQlAdapterError.createFromBetterSqlite3(e)
       }
     }
   }
@@ -44,7 +44,7 @@ export class BetterSqlite3Adapter implements SchemQlAdapter {
     return (params?: TParams): NonNullable<TResult> => {
       const result = prepareFirst(params)
       if (result === undefined) {
-        throw new DbAdapterError('No result', DbAdapterErrorCode.NoResult)
+        throw new SchemQlAdapterError('No result', AdapterErrorCode.NoResult)
       }
       return result!
     }
@@ -63,17 +63,17 @@ export class BetterSqlite3Adapter implements SchemQlAdapter {
   }
 }
 
-export class DbAdapterError extends BaseDbAdapterError {
+export class SchemQlAdapterError extends BaseAdapterError {
   public static createFromBetterSqlite3 = (error: SQLite.SqliteError | TypeError) => {
     const mapCodes = new Map([
-      ['SQLITE_CONSTRAINT_UNIQUE', DbAdapterErrorCode.UniqueConstraint],
-      ['SQLITE_CONSTRAINT_FOREIGNKEY', DbAdapterErrorCode.ForeignkeyConstraint],
-      ['SQLITE_CONSTRAINT_NOTNULL', DbAdapterErrorCode.NotnullConstraint],
-      ['SQLITE_CONSTRAINT_CHECK', DbAdapterErrorCode.CheckConstraint],
-      ['SQLITE_CONSTRAINT_PRIMARYKEY', DbAdapterErrorCode.PrimarykeyConstraint],
+      ['SQLITE_CONSTRAINT_UNIQUE', AdapterErrorCode.UniqueConstraint],
+      ['SQLITE_CONSTRAINT_FOREIGNKEY', AdapterErrorCode.ForeignkeyConstraint],
+      ['SQLITE_CONSTRAINT_NOTNULL', AdapterErrorCode.NotnullConstraint],
+      ['SQLITE_CONSTRAINT_CHECK', AdapterErrorCode.CheckConstraint],
+      ['SQLITE_CONSTRAINT_PRIMARYKEY', AdapterErrorCode.PrimarykeyConstraint],
     ])
 
-    return new DbAdapterError(error.message, mapCodes.get(error.code) ?? DbAdapterErrorCode.Generic, error)
+    return new SchemQlAdapterError(error.message, mapCodes.get(error.code) ?? AdapterErrorCode.Generic, error)
   }
 }
-export { DbAdapterErrorCode }
+export { AdapterErrorCode as SchemQlAdapterErrorCode }

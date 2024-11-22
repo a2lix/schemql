@@ -1,4 +1,4 @@
-import { BaseDbAdapterError, DbAdapterErrorCode } from '@/db-adapters/baseDbAdapterError'
+import { AdapterErrorCode, BaseAdapterError } from '@/adapters/baseAdapterError'
 import type { SchemQlAdapter } from '@/schemql'
 import type { D1Database } from '@cloudflare/workers-types'
 
@@ -12,9 +12,10 @@ export class D1Adapter implements SchemQlAdapter {
     return async (params?: TParams) => {
       try {
         const arrParams = params ? paramsOrder.map((key) => params[key]) : []
-        return await stmt.bind(...arrParams).all<TResult>()
+        const { results } = await stmt.bind(...arrParams).all<TResult>()
+        return results
       } catch (e: any) {
-        throw DbAdapterError.createFromD1(e)
+        throw SchemQlAdapterError.createFromD1(e)
       }
     }
   }
@@ -28,7 +29,7 @@ export class D1Adapter implements SchemQlAdapter {
         const arrParams = params ? paramsOrder.map((key) => params[key]) : []
         return await stmt.bind(...arrParams).first<TResult | undefined>()
       } catch (e: any) {
-        throw DbAdapterError.createFromD1(e)
+        throw SchemQlAdapterError.createFromD1(e)
       }
     }
   }
@@ -39,7 +40,7 @@ export class D1Adapter implements SchemQlAdapter {
     return async (params?: TParams) => {
       const result = await prepareFirst(params)
       if (result === undefined) {
-        throw new DbAdapterError('No result', DbAdapterErrorCode.NoResult)
+        throw new SchemQlAdapterError('No result', AdapterErrorCode.NoResult)
       }
       return result!
     }
@@ -65,32 +66,32 @@ export class D1Adapter implements SchemQlAdapter {
   }
 }
 
-export class DbAdapterError extends BaseDbAdapterError {
+export class SchemQlAdapterError extends BaseAdapterError {
   public static createFromD1 = (error: Error) => {
     // https://github.com/prisma/prisma/blob/main/packages/adapter-d1/src/utils.ts
     const computeCode = (message: string) => {
       if (message.startsWith('D1_ERROR:')) {
         if (message.startsWith('D1_ERROR: UNIQUE constraint failed')) {
-          return DbAdapterErrorCode.UniqueConstraint
+          return AdapterErrorCode.UniqueConstraint
         }
         if (message.startsWith('D1_ERROR: FOREIGN KEY constraint failed')) {
-          return DbAdapterErrorCode.ForeignkeyConstraint
+          return AdapterErrorCode.ForeignkeyConstraint
         }
         if (message.startsWith('D1_ERROR: NOT NULL constraint failed')) {
-          return DbAdapterErrorCode.NotnullConstraint
+          return AdapterErrorCode.NotnullConstraint
         }
         if (message.startsWith('D1_ERROR: CHECK constraint failed')) {
-          return DbAdapterErrorCode.CheckConstraint
+          return AdapterErrorCode.CheckConstraint
         }
         if (message.startsWith('D1_ERROR: PRIMARY KEY constraint failed')) {
-          return DbAdapterErrorCode.PrimarykeyConstraint
+          return AdapterErrorCode.PrimarykeyConstraint
         }
       }
 
-      return DbAdapterErrorCode.Generic
+      return AdapterErrorCode.Generic
     }
 
-    return new DbAdapterError(error.message, computeCode(error.message), error)
+    return new SchemQlAdapterError(error.message, computeCode(error.message), error)
   }
 }
-export { DbAdapterErrorCode }
+export { AdapterErrorCode as SchemQlAdapterErrorCode }

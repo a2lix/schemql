@@ -48,7 +48,7 @@ export const zUserDb = z.object({
   id: z.string(),
   email: z.string(),
   metadata: z.preprocess(
-    parseJsonPreprocessor,   // ! Zod handles JSON parsing for JSON columns
+    parseJsonPreprocessor,   // ! Zod handles JSON parsing for this JSON columns 'metadata'
     z.object({
       role: z.enum(['user', 'admin']).default('user'),
     })
@@ -71,68 +71,18 @@ export interface DB {
 <details>
 <summary>2. Initialize your instance of SchemQl with the DB interface typing</summary>
 <br>
-Example with better-sqlite3, but you can use your favorite library.
-
-Here the 4 methods first/firstOrThrow/all/iterate are defined at the instance level, but you can define them at the query level if you prefer.
-You can also ignore some methods if you don't need them.
+Example with better-sqlite3 adapter.
 
 ```typescript
 import { SchemQl } from '@a2lix/schemql'
-import SQLite from 'better-sqlite3'
+import { BetterSqlite3Adapter } from '@a2lix/schemql/adapters/better-sqlite3'
 import type { DB } from '@/schema'
 
-const db = new SQLite('sqlite.db')
-
 const schemQl = new SchemQl<DB>({
-  queryFns: {    // Optional at this level, but simplifies usage
-    first: (sql) => {
-      const stmt = db.prepare(sql)
-      return (params) => {
-        return stmt.get(params)
-      }
-    },
-    firstOrThrow: (sql) => {
-      const stmt = db.prepare(sql)
-      return (params) => {
-        const first = stmt.get(params)
-        if (first === undefined) {
-          throw new Error('No result found')
-        }
-        return first
-      }
-    },
-    all: (sql) => {
-      const stmt = db.prepare(sql)
-      return (params) => {
-        return params ? stmt.all(params) : stmt.all()
-      }
-    },
-    iterate: (sql) => {
-      const stmt = db.prepare(sql)
-      return (params) => {
-        return stmt.iterate(params)
-      }
-    },
-  },
+  adapter: new BetterSqlite3Adapter('sqlite.db'),
   shouldStringifyObjectParams: true,   // Optional. Automatically stringify objects (useful for JSON)
 })
 ```
-
-You can also keep initialization simple if your move some logic in you own custom class
-
-```typescript
-const sqliteDb = new SQLiteDb()  // Custom class with better error handling
-
-const schemQl = new SchemQl<DB>({
-  queryFns: {
-    first: sqliteDb.queryFirst.bind(db),
-    firstOrThrow: sqliteDb.queryFirstOrThrow.bind(db),
-    all: sqliteDb.queryAll.bind(db),
-  },
-  shouldStringifyObjectParams: true,
-})
-```
-
 </details>
 
 <details open>

@@ -1,6 +1,6 @@
 {
   "name": "@a2lix/schemql",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "A lightweight TypeScript library that enhances your SQL workflow by combining raw SQL with targeted type safety and schema validation",
   "license": "MIT",
   "keywords": [
@@ -45,13 +45,35 @@
         "default": "./dist/index.cjs"
       }
     },
-    "./db-adapters/better-sqlite3": {
-      "import": "./dist/db-adapters/betterSqlite3Adapter.mjs",
-      "require": "./dist/db-adapters/betterSqlite3Adapter.cjs"
+    "./adapters/base-error": {
+      "import": {
+        "types": "./dist/adapters/baseAdapterError.d.mts",
+        "default": "./dist/adapters/baseAdapterError.mjs"
+      },
+      "require": {
+        "types": "./dist/adapters/baseAdapterError.d.cts",
+        "default": "./dist/adapters/baseAdapterError.cjs"
+      }
     },
-    "./db-adapters/d1": {
-      "import": "./dist/db-adapters/d1Adapter.mjs",
-      "require": "./dist/db-adapters/d1Adapter.cjs"
+    "./adapters/better-sqlite3": {
+      "import": {
+        "types": "./dist/adapters/betterSqlite3Adapter.d.mts",
+        "default": "./dist/adapters/betterSqlite3Adapter.mjs"
+      },
+      "require": {
+        "types": "./dist/adapters/betterSqlite3Adapter.d.cts",
+        "default": "./dist/adapters/betterSqlite3Adapter.cjs"
+      }
+    },
+    "./adapters/d1": {
+      "import": {
+        "types": "./dist/adapters/d1Adapter.d.mts",
+        "default": "./dist/adapters/d1Adapter.mjs"
+      },
+      "require": {
+        "types": "./dist/adapters/d1Adapter.d.cts",
+        "default": "./dist/adapters/d1Adapter.cjs"
+      }
     }
   },
   "files": [
@@ -76,10 +98,10 @@
   },
   "peerDependencies": {
     "@cloudflare/workers-types": "^4.20241112.0",
-    "better-sqlite3": "^8.7.0"
+    "better-sqlite3": "^11.5.0"
   },
   "optionalDependencies": {
     "@cloudflare/workers-types": "^4.20241112.0",
-    "better-sqlite3": "^8.7.0"
+    "better-sqlite3": "^11.5.0"
   }
 }

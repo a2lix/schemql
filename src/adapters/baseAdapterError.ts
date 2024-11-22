@@ -1,4 +1,4 @@
-export enum DbAdapterErrorCode {
+export enum AdapterErrorCode {
   InvalidParams = 'INVALID_PARAMS',
   InvalidResults = 'INVALID_RESULTS',
   UniqueConstraint = 'UNIQUE_CONSTRAINT',
@@ -10,15 +10,15 @@ export enum DbAdapterErrorCode {
   Generic = 'GENERIC',
 }
 
-export class BaseDbAdapterError extends Error {
+export class BaseAdapterError extends Error {
   public constructor(
     message: string,
-    public code: DbAdapterErrorCode,
+    public code: AdapterErrorCode,
     public originalError?: Error
   ) {
     super(message)
-    this.name = 'DbAdapterError'
+    this.name = 'AdapterError'
   }
 
-  public isNoResultError = () => this.code === DbAdapterErrorCode.NoResult
+  public isNoResultError = () => this.code === AdapterErrorCode.NoResult
 }
