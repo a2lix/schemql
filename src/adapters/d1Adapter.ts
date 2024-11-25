@@ -2,10 +2,12 @@ import { AdapterErrorCode, BaseAdapterError } from '@/adapters/baseAdapterError'
 import type { SchemQlAdapter } from '@/schemql'
 import type { D1Database } from '@cloudflare/workers-types'
 
-export class D1Adapter implements SchemQlAdapter {
+export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
   public constructor(private db: D1Database) {}
 
-  public queryAll = <TResult, TParams extends Record<string, any>>(sql: string) => {
+  public queryAll = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
+    sql: string
+  ) => {
     const { sql: anonymousSql, paramsOrder } = this.transformToAnonymousParams(sql)
     const stmt = this.db.prepare(anonymousSql)
 
@@ -20,21 +22,28 @@ export class D1Adapter implements SchemQlAdapter {
     }
   }
 
-  public queryFirst = <TResult, TParams extends Record<string, any>>(sql: string) => {
+  public queryFirst = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
+    sql: string
+  ) => {
     const { sql: anonymousSql, paramsOrder } = this.transformToAnonymousParams(sql)
     const stmt = this.db.prepare(anonymousSql)
 
     return async (params?: TParams) => {
       try {
         const arrParams = params ? paramsOrder.map((key) => params[key]) : []
-        return await stmt.bind(...arrParams).first<TResult | undefined>()
+        return (await stmt.bind(...arrParams).first<TResult | undefined>()) ?? undefined
       } catch (e: any) {
         throw SchemQlAdapterError.createFromD1(e)
       }
     }
   }
 
-  public queryFirstOrThrow = <TResult, TParams extends Record<string, any>>(sql: string) => {
+  public queryFirstOrThrow = <
+    TResult,
+    TParams extends Record<string, any> | undefined = Record<string, any> | undefined,
+  >(
+    sql: string
+  ) => {
     const prepareFirst = this.queryFirst<TResult, TParams>(sql)
 
     return async (params?: TParams) => {
@@ -46,13 +55,13 @@ export class D1Adapter implements SchemQlAdapter {
     }
   }
 
-  public queryIterate = <TResult, TParams extends Record<string, any>>(sql: string) => {
+  public queryIterate = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
+    sql: string
+  ) => {
     return (params?: TParams) => {
       throw new Error('Not implemented')
     }
   }
-
-  public close = () => {}
 
   private transformToAnonymousParams = (sql: string) => {
     const paramsOrder: string[] = []

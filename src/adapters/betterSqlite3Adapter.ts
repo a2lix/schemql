@@ -1,44 +1,63 @@
 import { AdapterErrorCode, BaseAdapterError } from '@/adapters/baseAdapterError'
 import type { SchemQlAdapter } from '@/schemql'
 // @ts-ignore
-import SQLite from 'better-sqlite3'
+import type SQLite from 'better-sqlite3'
 
-export class BetterSqlite3Adapter implements SchemQlAdapter {
-  private db: SQLite.Adapter
+export class BetterSqlite3Adapter<T = unknown> implements SchemQlAdapter<T> {
+  public constructor(private db: SQLite.Database) {}
 
-  public constructor(filename: string, options?: SQLite.Options) {
-    this.db = new SQLite(filename, {
-      ...options,
-      verbose: console.log,
-    })
-    this.db.pragma('journal_mode = WAL')
-  }
-
-  public queryAll = <TResult, TParams extends Record<string, any>>(sql: string) => {
-    const stmt = this.db.prepare(sql)
+  public queryAll = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
+    sql: string
+  ) => {
+    let stmt: SQLite.Statement
+    try {
+      stmt = this.db.prepare(sql)
+    } catch (e) {
+      throw SchemQlAdapterError.createFromBetterSqlite3(e)
+    }
 
     return (params?: TParams): TResult[] => {
       try {
         return params ? stmt.all(params) : stmt.all()
       } catch (e) {
+        if (e instanceof TypeError && e.message === 'This statement does not return data. Use run() instead') {
+          this.handleTypeErrorRun(stmt, params)
+          return []
+        }
         throw SchemQlAdapterError.createFromBetterSqlite3(e)
       }
     }
   }
 
-  public queryFirst = <TResult, TParams extends Record<string, any>>(sql: string) => {
-    const stmt = this.db.prepare(sql)
+  public queryFirst = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
+    sql: string
+  ) => {
+    let stmt: SQLite.Statement
+    try {
+      stmt = this.db.prepare(sql)
+    } catch (e) {
+      throw SchemQlAdapterError.createFromBetterSqlite3(e)
+    }
 
     return (params?: TParams): TResult | undefined => {
       try {
-        return stmt.get(params)
+        return params ? stmt.get(params) : stmt.get()
       } catch (e) {
+        if (e instanceof TypeError && e.message === 'This statement does not return data. Use run() instead') {
+          this.handleTypeErrorRun(stmt, params)
+          return undefined
+        }
         throw SchemQlAdapterError.createFromBetterSqlite3(e)
       }
     }
   }
 
-  public queryFirstOrThrow = <TResult, TParams extends Record<string, any>>(sql: string) => {
+  public queryFirstOrThrow = <
+    TResult,
+    TParams extends Record<string, any> | undefined = Record<string, any> | undefined,
+  >(
+    sql: string
+  ) => {
     const prepareFirst = this.queryFirst<TResult, TParams>(sql)
 
     return (params?: TParams): NonNullable<TResult> => {
@@ -50,16 +69,22 @@ export class BetterSqlite3Adapter implements SchemQlAdapter {
     }
   }
 
-  public queryIterate = <TResult, TParams extends Record<string, any>>(sql: string) => {
+  public queryIterate = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
+    sql: string
+  ) => {
     const stmt = this.db.prepare(sql)
 
     return (params?: TParams) => {
-      return stmt.iterate(params)
+      return params ? stmt.iterate(params) : stmt.iterate()
     }
   }
 
-  public close = () => {
-    this.db.close()
+  private handleTypeErrorRun = (stmt: SQLite.Statement, params: Record<string, any> | undefined) => {
+    try {
+      params ? stmt.run(params) : stmt.run()
+    } catch (e) {
+      throw SchemQlAdapterError.createFromBetterSqlite3(e)
+    }
   }
 }
 
