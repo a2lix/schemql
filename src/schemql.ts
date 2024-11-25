@@ -8,12 +8,13 @@ export interface SchemQlAdapter<T = unknown> {
   queryIterate: IterativeQueryFn<T>
 }
 
-type QueryFn<TQueryResult, TParams = Record<string, any> | undefined> = (
+type QueryFn<TQueryResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined> = (
   sql: string
 ) => (params?: TParams) => TQueryResult | Promise<TQueryResult>
-type IterativeQueryFn<TQueryResult, TParams = Record<string, any> | undefined> = (
-  sql: string
-) => (params?: TParams) => GeneratorFn<TQueryResult> | AsyncGeneratorFn<TQueryResult>
+type IterativeQueryFn<
+  TQueryResult,
+  TParams extends Record<string, any> | undefined = Record<string, any> | undefined,
+> = (sql: string) => (params?: TParams) => GeneratorFn<TQueryResult> | AsyncGeneratorFn<TQueryResult>
 
 // Helpers
 type ArrayElement<T> = T extends (infer U)[] ? U : T

@@ -1,6 +1,6 @@
 {
   "name": "@a2lix/schemql",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "A lightweight TypeScript library that enhances your SQL workflow by combining raw SQL with targeted type safety and schema validation",
   "license": "MIT",
   "keywords": [
@@ -82,7 +82,7 @@
   "scripts": {
     "biome": "biome check --write ./src ./tests",
     "biome:ci": "biome ci ./src ./tests",
-    "test": "tsx --test ./tests/**/*.ts",
+    "test": "tsx --test './tests/**/*.test.ts'",
     "build": "pkgroll --clean-dist --minify --src src/"
   },
   "dependencies": {
@@ -91,17 +91,17 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.9.1",
+    "better-sqlite3": "^11.5.0",
     "pkgroll": "^2.5.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   },
   "peerDependencies": {
-    "@cloudflare/workers-types": "^4.20241112.0",
-    "better-sqlite3": "^11.5.0"
+    "@cloudflare/workers-types": "*",
+    "better-sqlite3": "*"
   },
   "optionalDependencies": {
-    "@cloudflare/workers-types": "^4.20241112.0",
-    "better-sqlite3": "^11.5.0"
+    "@cloudflare/workers-types": "*"
   }
 }

@@ -87,7 +87,7 @@ describe('SchemQl - queryFn related', () => {
         override queryAll = (sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users')
           return async (params?: any) => {
-            return (await fixtureUsers.values().toArray())
+            return await Array.from(fixtureUsers.values())
           }
         }
         override queryIterate = (sql: string) => {
@@ -102,7 +102,7 @@ describe('SchemQl - queryFn related', () => {
       shouldStringifyObjectParams: true,
     })
     const results = await schemQl.all({})('SELECT * FROM users')
-    assert.deepEqual(results, fixtureUsers.values().toArray())
+    assert.deepEqual(results, Array.from(fixtureUsers.values()))
 
     const iterResults = await schemQl.iterate({})('SELECT * FROM users')
     const res1 = await iterResults?.next()
@@ -232,9 +232,9 @@ describe('SchemQl - resultSchema related', () => {
       adapter: new class extends SyncAdapter {
         override queryAll = (sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users')
-          return (params?: any) => {
-            return fixtureUsers.values().toArray()
-          }
+            return (params?: any) => {
+              return Array.from(fixtureUsers.values())
+            }
         }
       },
       shouldStringifyObjectParams: true,
