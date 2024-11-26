@@ -35,8 +35,8 @@ describe('BetterSqlite3Adapter', () => {
 
     it('should handle parameters correctly', () => {
       adapter.queryAll(`
-        INSERT INTO users (name, email) VALUES ('Bob', 'bob@example.com')
-      `)()
+        INSERT INTO users (name, email) VALUES (:name, :email)
+      `)({ name: 'Bob', email: 'bob@example.com' })
 
       const users = adapter.queryAll<{ id: number; name: string; email: string }>(
         'SELECT * FROM users WHERE name = :name'
@@ -137,8 +137,8 @@ describe('BetterSqlite3Adapter', () => {
       assert.throws(
         () =>
           adapter.queryAll(`
-            INSERT INTO users (name, email) VALUES ('Charlie', 'alice@example.com')
-          `)(),
+            INSERT INTO users (name, email) VALUES (:name, :email)
+          `)({ name: 'Charlie', email: 'alice@example.com' }),
         {
           code: SchemQlAdapterErrorCode.UniqueConstraint,
           message: 'UNIQUE constraint failed: users.email',
@@ -160,8 +160,8 @@ describe('BetterSqlite3Adapter', () => {
       assert.throws(
         () =>
           adapter.queryAll(`
-            INSERT INTO posts (title, user_id) VALUES ('Post 1', 999)
-          `)(),
+            INSERT INTO posts (title, user_id) VALUES (:title, :user_id)
+          `)({ title: 'Post 1', user_id: 999 }),
         {
           code: SchemQlAdapterErrorCode.ForeignkeyConstraint,
           message: 'FOREIGN KEY constraint failed',
@@ -173,8 +173,8 @@ describe('BetterSqlite3Adapter', () => {
       assert.throws(
         () =>
           adapter.queryAll(`
-            INSERT INTO users (name) VALUES ('Charlie')
-          `)(),
+            INSERT INTO users (name) VALUES (:name)
+          `)({ name: 'Charlie' }),
         {
           code: SchemQlAdapterErrorCode.NotnullConstraint,
           message: 'NOT NULL constraint failed: users.email',
@@ -195,8 +195,8 @@ describe('BetterSqlite3Adapter', () => {
       assert.throws(
         () =>
           adapter.queryAll(`
-            INSERT INTO products (name, price) VALUES ('Product 1', -1)
-          `)(),
+            INSERT INTO products (name, price) VALUES (:name, :price)
+          `)({ name: 'Product 1', price: -1 }),
         {
           code: SchemQlAdapterErrorCode.CheckConstraint,
           message: 'CHECK constraint failed: price > 0',
@@ -208,8 +208,8 @@ describe('BetterSqlite3Adapter', () => {
       assert.throws(
         () =>
           adapter.queryAll(`
-            INSERT INTO users (id, name, email) VALUES (1, 'Charlie', 'charlie@example.com')
-          `)(),
+            INSERT INTO users (id, name, email) VALUES (:id, :name, :email)
+          `)({ id: 1, name: 'Charlie', email: 'charlie@example.com' }),
         {
           code: SchemQlAdapterErrorCode.PrimarykeyConstraint,
           message: 'UNIQUE constraint failed: users.id',
