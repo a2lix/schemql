@@ -3,7 +3,10 @@ import type { SchemQlAdapter } from '@/schemql'
 import type { D1Database } from '@cloudflare/workers-types'
 
 export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
-  public constructor(private db: D1Database) {}
+  public constructor(
+    private db: D1Database,
+    private options = { verbose: false }
+  ) {}
 
   public queryAll = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
     sql: string
@@ -15,6 +18,10 @@ export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
       try {
         const arrParams = params ? paramsOrder.map((key) => params[key]) : []
         const { results } = await stmt.bind(...arrParams).all<TResult>()
+        if (this.options.verbose) {
+          this.logSql(anonymousSql, arrParams)
+        }
+
         return results
       } catch (e: any) {
         throw SchemQlAdapterError.createFromD1(e)
@@ -31,7 +38,12 @@ export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
     return async (params?: TParams) => {
       try {
         const arrParams = params ? paramsOrder.map((key) => params[key]) : []
-        return (await stmt.bind(...arrParams).first<TResult | undefined>()) ?? undefined
+        const result = (await stmt.bind(...arrParams).first<TResult | undefined>()) ?? undefined
+        if (this.options.verbose) {
+          this.logSql(anonymousSql, arrParams)
+        }
+
+        return result
       } catch (e: any) {
         throw SchemQlAdapterError.createFromD1(e)
       }
@@ -72,6 +84,16 @@ export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
     })
 
     return { sql: anonymousSql, paramsOrder }
+  }
+
+  private logSql = (sql: string, arrParams: string[]) => {
+    const stringParams = arrParams.map((param) =>
+      typeof param === 'string' ? `'${param}'` : param === null ? 'NULL' : param
+    )
+
+    let paramIndex = 0
+    const interpolatedSql = sql.replace(/\?/g, () => stringParams[paramIndex++] ?? '?')
+    console.log(`\n${interpolatedSql}\n`)
   }
 }
 
