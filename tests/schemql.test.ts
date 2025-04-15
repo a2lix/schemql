@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 import { SchemQl, type SchemQlAdapter } from '@/index'
 import { z } from 'zod'
 import { type DB, zSessionDb, zUserDb } from './schema_zod'
+import { type DB as DB_AT, tUserDb } from './schema_arktype'
 
 const normalizeString = (str: string) => {
   return str.replace(/\s+/g, ' ').trim()
@@ -226,7 +227,7 @@ describe('SchemQl - queryFn related', () => {
 })
 
 describe('SchemQl - resultSchema related', () => {
-  it('should return the expected result, parsed by resultSchema if provided', async () => {
+  it('should return the expected result, parsed by resultSchema if provided - Zod', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
       adapter: new class extends SyncAdapter {
@@ -241,6 +242,41 @@ describe('SchemQl - resultSchema related', () => {
     })
     const results = await schemQl.all({
       resultSchema: zUserDb.array(),
+    })('SELECT * FROM users')
+
+    assert.deepEqual(results, [
+      {
+        id: 'uuid-1',
+        email: 'john@doe.com',
+        metadata: { role: 'user' },
+        created_at: 1500000000,
+        disabled_at: null,
+      },
+      {
+        id: 'uuid-2',
+        email: 'jane@doe.com',
+        metadata: { role: 'user' },
+        created_at: 1500000000,
+        disabled_at: null,
+      },
+    ])
+  })
+
+  it('should return the expected result, parsed by resultSchema if provided - ArkType', async () => {
+    const schemQl = new SchemQl<DB_AT>({
+      // biome-ignore format:
+      adapter: new class extends SyncAdapter {
+        override queryAll = (sql: string) => {
+          assert.strictEqual(sql, 'SELECT * FROM users')
+            return (params?: any) => {
+              return Array.from(fixtureUsers.values())
+            }
+        }
+      },
+      shouldStringifyObjectParams: true,
+    })
+    const results = await schemQl.all({
+      resultSchema: tUserDb.array(),
     })('SELECT * FROM users')
 
     assert.deepEqual(results, [
