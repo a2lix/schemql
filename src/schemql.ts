@@ -85,7 +85,11 @@ type SqlOrBuilderFn<TResultSchema extends StandardSchemaV1 | undefined, TParams 
 
 type SchemQlSqlHelper<TResultSchema extends StandardSchemaV1 | undefined, TParams extends Record<string, any>, DB> = {
   sql: <
-    T extends SqlTemplateValues<TResultSchema extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<TResultSchema> : unknown, TParams, DB>,
+    T extends SqlTemplateValues<
+      TResultSchema extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<TResultSchema> : unknown,
+      TParams,
+      DB
+    >,
   >(
     strings: TemplateStringsArray,
     ...values: T
@@ -258,7 +262,9 @@ export class SchemQl<DB> {
       return undefined
     }
 
-    const parsedParams = options.paramsSchema ? await standardValidate(options.paramsSchema, options.params) : options.params
+    const parsedParams = options.paramsSchema
+      ? await standardValidate(options.paramsSchema, options.params)
+      : options.params
 
     if (!this.options.shouldStringifyObjectParams) {
       return parsedParams as TParams
@@ -287,7 +293,11 @@ export class SchemQl<DB> {
     TParams extends Record<string, any>,
   >(
     strings: TemplateStringsArray,
-    values: SqlTemplateValue<TResultSchema extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<TResultSchema> : unknown, TParams, DB>[]
+    values: SqlTemplateValue<
+      TResultSchema extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<TResultSchema> : unknown,
+      TParams,
+      DB
+    >[]
   ): string => {
     return strings.reduce((acc, str, i) => {
       const value = values[i]
@@ -299,7 +309,11 @@ export class SchemQl<DB> {
     TResultSchema extends StandardSchemaV1 | undefined,
     TParams extends Record<string, any>,
   >(
-    value: SqlTemplateValue<TResultSchema extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<TResultSchema> : unknown, TParams, DB>
+    value: SqlTemplateValue<
+      TResultSchema extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<TResultSchema> : unknown,
+      TParams,
+      DB
+    >
   ): string => {
     if (typeof value === 'object') {
       const entries = Object.entries(value)
@@ -364,7 +378,7 @@ const standardValidate = async <Schema extends StandardSchemaV1>(
   schema: Schema,
   input: StandardSchemaV1.InferInput<Schema>
 ): Promise<StandardSchemaV1.InferOutput<Schema>> => {
-  let result = schema['~standard'].validate(input);
+  let result = schema['~standard'].validate(input)
   if (result instanceof Promise) {
     result = await result
   }

@@ -2,8 +2,8 @@ import assert from 'node:assert'
 import { describe, it } from 'node:test'
 import { SchemQl, type SchemQlAdapter } from '@/index'
 import { z } from 'zod'
-import { type DB, zSessionDb, zUserDb } from './schema_zod'
 import { type DB as DB_AT, tUserDb } from './schema_arktype'
+import { type DB, zSessionDb, zUserDb } from './schema_zod'
 
 const normalizeString = (str: string) => {
   return str.replace(/\s+/g, ' ').trim()
