@@ -96,7 +96,9 @@ type SchemQlSqlHelper<TResultSchema extends StandardSchemaV1 | undefined, TParam
 // --- Configuration ---
 type SchemQlOptions = {
   adapter: SchemQlAdapter
+  /** @deprecated Use `stringifyObjectParams` instead */
   shouldStringifyObjectParams?: boolean
+  stringifyObjectParams?: boolean
   quoteSqlIdentifiers?: boolean
 }
 
@@ -281,7 +283,7 @@ export class SchemQl<DB> {
       ? await standardValidate(options.paramsSchema, options.params)
       : options.params
 
-    if (!this.options.shouldStringifyObjectParams) {
+    if (!(this.options.shouldStringifyObjectParams || this.options.stringifyObjectParams)) {
       // Cast needed: validation might change type slightly.
       return validatedParams as TParams
     }
@@ -339,7 +341,7 @@ export class SchemQl<DB> {
 
         return !this.options.quoteSqlIdentifiers
           ? `${tableName} (${Array.isArray(columns) ? columns.join(', ') : String(columns)})`
-          : `"${tableName}" (${Array.isArray(columns) ? columns.join(', ') : String(columns)})`
+          : `"${tableName}" ("${Array.isArray(columns) ? columns.join('", "') : String(columns)}")`
       }
     }
 

@@ -97,7 +97,7 @@ import type { DB } from '@/schema'
 
 const schemQl = new SchemQl<DB>({
   adapter: new BetterSqlite3Adapter('sqlite.db'),
-  shouldStringifyObjectParams: true,   // Optional. Automatically stringify objects (useful for JSON)
+  stringifyObjectParams: true,   // Optional. Automatically stringify objects (useful for JSON)
 })
 ```
 </details>
