@@ -12,7 +12,7 @@
 - **Database agnostic**: Compatible with any DBMS.
 - **SQL-first**: Write SQL with precise type checks on literals like tables, columns (JSON fields & some JSONPath included), and parameters.
 - **Flexible parameters** Supports single objects, arrays of objects, and asynchronous generators for parameters.
-- **Schema-agnostic**: Use any validation library implementing [Standard Schema](https://github.com/standard-schema/standard-schema) (Zod, ArkType, Effect, etc.) to validate and parse parameters and query results.
+- **Schema-agnostic**: Use any validation library implementing [Standard Schema](https://standardschema.dev/) (Zod, ArkType, Effect, etc.) to validate and parse parameters and query results.
 - **Iterative Execution** Process large datasets efficiently using asynchronous generators.
 
 
@@ -255,8 +255,6 @@ const iterResults = await schemQl.iterate({
 ## Contributing
 
 Contributions are welcome! This library aims to remain lightweight and focused, so please keep PRs concise and aligned with this goal.
-
-This library relies on [Standard Schema](https://github.com/standard-schema/standard-schema) for schema validation, so you can use [Zod](https://zod.dev/), [ArkType](https://arktype.io/), [@effect/schema](https://effect.website/docs/schema/introduction/), or any compatible library.
 
 ## License
 
