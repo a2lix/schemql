@@ -1,14 +1,13 @@
 import assert from 'node:assert'
+import SQLite from 'node:sqlite'
 import { before, describe, it } from 'node:test'
-import { BetterSqlite3Adapter, SchemQlAdapterErrorCode } from '@/adapters/betterSqlite3Adapter'
-// @ts-ignore
-import SQLite from 'better-sqlite3'
+import { NodeSqliteAdapter, SchemQlAdapterErrorCode } from '@/adapters/nodeSqliteAdapter'
 
-describe('BetterSqlite3Adapter', () => {
-  let adapter: BetterSqlite3Adapter
+describe('NodeSqliteAdapter', () => {
+  let adapter: NodeSqliteAdapter
 
   before(() => {
-    const db = new SQLite(':memory:', {
+    const db = new SQLite.DatabaseSync(':memory:', {
       // verbose: console.log,
     })
 
@@ -22,7 +21,7 @@ describe('BetterSqlite3Adapter', () => {
       INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com');
     `)
 
-    adapter = new BetterSqlite3Adapter(db)
+    adapter = new NodeSqliteAdapter(db)
   })
 
   describe('queryAll', () => {
@@ -103,7 +102,6 @@ describe('BetterSqlite3Adapter', () => {
     it('should iterate over all rows matching the query', () => {
       const iterator = adapter.queryIterate<{ id: number; name: string; email: string }>('SELECT * FROM users')()
       let result = iterator.next()
-      assert.strictEqual(result.done, false)
       assert.strictEqual(result.value.name, 'Alice')
       assert.strictEqual(result.value.email, 'alice@example.com')
 
@@ -114,7 +112,7 @@ describe('BetterSqlite3Adapter', () => {
 
       result = iterator.next()
       assert.strictEqual(result.done, true)
-      assert.strictEqual(result.value, undefined)
+      assert.strictEqual(result.value, null)
     })
 
     it('should handle parameters correctly', () => {
@@ -128,7 +126,7 @@ describe('BetterSqlite3Adapter', () => {
 
       result = iterator.next()
       assert.strictEqual(result.done, true)
-      assert.strictEqual(result.value, undefined)
+      assert.strictEqual(result.value, null)
     })
   })
 
@@ -204,14 +202,15 @@ describe('BetterSqlite3Adapter', () => {
       )
     })
 
-    it('should throw a SchemQlAdapterError for a primary key constraint violation', () => {
+    // No dedicated PRIMARY KEY constraint violation in SQLite :/
+    it('should throw a SchemQlAdapterError for a unique constraint violation', () => {
       assert.throws(
         () =>
           adapter.queryAll(`
             INSERT INTO users (id, name, email) VALUES (:id, :name, :email)
           `)({ id: 1, name: 'Charlie', email: 'charlie@example.com' }),
         {
-          code: SchemQlAdapterErrorCode.PrimarykeyConstraint,
+          code: SchemQlAdapterErrorCode.UniqueConstraint,
           message: 'UNIQUE constraint failed: users.id',
         }
       )

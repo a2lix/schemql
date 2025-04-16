@@ -2,6 +2,7 @@ import assert from 'node:assert'
 import { describe, it } from 'node:test'
 import { SchemQl, type SchemQlAdapter } from '@/index'
 import { z } from 'zod'
+import { type DB as DB_AT, tUserDb } from './schema_arktype'
 import { type DB, zSessionDb, zUserDb } from './schema_zod'
 
 const normalizeString = (str: string) => {
@@ -99,7 +100,7 @@ describe('SchemQl - queryFn related', () => {
             }
         }
       },
-      shouldStringifyObjectParams: true,
+      stringifyObjectParams: true,
     })
     const results = await schemQl.all({})('SELECT * FROM users')
     assert.deepEqual(results, Array.from(fixtureUsers.values()))
@@ -122,7 +123,7 @@ describe('SchemQl - queryFn related', () => {
           }
         }
       },
-      shouldStringifyObjectParams: true,
+      stringifyObjectParams: true,
     })
     const iterResults = await schemQl.first({
       params: [
@@ -154,7 +155,7 @@ describe('SchemQl - queryFn related', () => {
           }
         }
       },
-      shouldStringifyObjectParams: true,
+      stringifyObjectParams: true,
     })
     const iterResults = await schemQl.first({
       params: function* () {
@@ -182,7 +183,7 @@ describe('SchemQl - queryFn related', () => {
           }
         }
       },
-      shouldStringifyObjectParams: true,
+      stringifyObjectParams: true,
     })
     const iterResults = await schemQl.first({
       params: async function* () {
@@ -212,7 +213,7 @@ describe('SchemQl - queryFn related', () => {
             }
         }
       },
-      shouldStringifyObjectParams: true,
+      stringifyObjectParams: true,
     })
     const iterResults = await schemQl.iterate({
       // resultSchema: zUserDb,
@@ -226,7 +227,7 @@ describe('SchemQl - queryFn related', () => {
 })
 
 describe('SchemQl - resultSchema related', () => {
-  it('should return the expected result, parsed by resultSchema if provided', async () => {
+  it('should return the expected result, parsed by resultSchema if provided - Zod', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
       adapter: new class extends SyncAdapter {
@@ -237,10 +238,45 @@ describe('SchemQl - resultSchema related', () => {
             }
         }
       },
-      shouldStringifyObjectParams: true,
+      stringifyObjectParams: true,
     })
     const results = await schemQl.all({
       resultSchema: zUserDb.array(),
+    })('SELECT * FROM users')
+
+    assert.deepEqual(results, [
+      {
+        id: 'uuid-1',
+        email: 'john@doe.com',
+        metadata: { role: 'user' },
+        created_at: 1500000000,
+        disabled_at: null,
+      },
+      {
+        id: 'uuid-2',
+        email: 'jane@doe.com',
+        metadata: { role: 'user' },
+        created_at: 1500000000,
+        disabled_at: null,
+      },
+    ])
+  })
+
+  it('should return the expected result, parsed by resultSchema if provided - ArkType', async () => {
+    const schemQl = new SchemQl<DB_AT>({
+      // biome-ignore format:
+      adapter: new class extends SyncAdapter {
+        override queryAll = (sql: string) => {
+          assert.strictEqual(sql, 'SELECT * FROM users')
+            return (params?: any) => {
+              return Array.from(fixtureUsers.values())
+            }
+        }
+      },
+      stringifyObjectParams: true,
+    })
+    const results = await schemQl.all({
+      resultSchema: tUserDb.array(),
     })('SELECT * FROM users')
 
     assert.deepEqual(results, [
@@ -275,7 +311,7 @@ describe('SchemQl - paramsSchema related', () => {
           }
         }
       },
-      shouldStringifyObjectParams: true,
+      stringifyObjectParams: true,
     })
     const result = await schemQl.first({
       params: {
@@ -319,7 +355,7 @@ WHERE
           }
         }
       },
-      shouldStringifyObjectParams: true,
+      stringifyObjectParams: true,
     })
     const result = await schemQl.first({
       resultSchema: zUserDb.and(z.object({ length_id: z.number() })),
@@ -375,7 +411,7 @@ WHERE
           }
         }
       },
-      shouldStringifyObjectParams: true,
+      stringifyObjectParams: true,
     })
     const result = await schemQl.first({
       resultSchema: zUserDb.and(z.object({ length_id: z.number() })).optional(),
@@ -433,7 +469,77 @@ RETURNING *
           }
         }
       },
-      shouldStringifyObjectParams: true,
+      stringifyObjectParams: true,
+    })
+    const result = await schemQl.first({
+      resultSchema: zUserDb,
+      params: {
+        id: 'uuid-3',
+        email: 'joke@doe.com',
+        metadata: { role: 'admin' },
+      },
+      paramsSchema: zUserDb.pick({ id: true, email: true, metadata: true }),
+    })(
+      (s) =>
+        // biome-ignore format:
+        s.sql`
+INSERT INTO
+  ${{ users: ['id', 'email', 'metadata'] }}
+VAlUES
+  (
+    ${':id'}
+    , ${':email'}
+    , json(${':metadata'})
+  )
+RETURNING *
+`
+    )
+
+    assert.deepEqual(result, {
+      id: 'uuid-3',
+      email: 'joke@doe.com',
+      metadata: {
+        role: 'admin',
+      },
+      created_at: 1500000000,
+      disabled_at: null,
+    })
+  })
+
+  it('should return the expected result - with object helper - quoted', async () => {
+    const schemQl = new SchemQl<DB>({
+      // biome-ignore format:
+      adapter: new class extends SyncAdapter {
+        override queryFirst = (sql: string) => {
+          assert.strictEqual(
+            sql,
+// biome-ignore format:
+`
+INSERT INTO
+  "users" ("id", "email", "metadata")
+VAlUES
+  (
+    :id
+    , :email
+    , json(:metadata)
+  )
+RETURNING *
+`
+          )
+          return (params?: any) => {
+            assert.deepEqual(params, { id: 'uuid-3', email: 'joke@doe.com', metadata: '{"role":"admin"}' })
+            return {
+              id: 'uuid-3',
+              email: 'joke@doe.com',
+              metadata: '{"role":"admin"}',
+              created_at: 1500000000,
+              disabled_at: null,
+            }
+          }
+        }
+      },
+      stringifyObjectParams: true,
+      quoteSqlIdentifiers: true,
     })
     const result = await schemQl.first({
       resultSchema: zUserDb,
@@ -506,7 +612,7 @@ RETURNING *
           }
         }
       },
-      shouldStringifyObjectParams: true,
+      stringifyObjectParams: true,
     })
     const result = await schemQl.first({
       resultSchema: zUserDb,
@@ -581,7 +687,7 @@ LEFT JOIN sessions s ON s.id = _us.id
           }
         }
       },
-      shouldStringifyObjectParams: true,
+      stringifyObjectParams: true,
     })
     const result = await schemQl.all({
       resultSchema: z.object({ user_id: zUserDb.shape.id, session_id: zSessionDb.shape.id }).array(),

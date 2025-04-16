@@ -12,13 +12,11 @@
 - **Database agnostic**: Compatible with any DBMS.
 - **SQL-first**: Write SQL with precise type checks on literals like tables, columns (JSON fields & some JSONPath included), and parameters.
 - **Flexible parameters** Supports single objects, arrays of objects, and asynchronous generators for parameters.
-- **Zod integration** Use Zod schemas to validate and parse parameters and query results. (JSON fields included).
+- **Schema-agnostic**: Use any validation library implementing [Standard Schema](https://github.com/standard-schema/standard-schema) (Zod, ArkType, Effect, etc.) to validate and parse parameters and query results.
 - **Iterative Execution** Process large datasets efficiently using asynchronous generators.
 
 
-![Screenshot from 2024-10-29 14-41-05(1)](https://github.com/user-attachments/assets/86b1c3cd-2393-4914-b943-b249d6dad59a)
-
-
+![Screenshot](https://github.com/user-attachments/assets/86b1c3cd-2393-4914-b943-b249d6dad59a)
 
 ## Installation
 
@@ -35,12 +33,12 @@ Here's a basic example of how to use SchemQl:
 <details>
 <summary>1. Create your database schema and expose it with a DB interface</summary>
 <br>
-Tip: Use your favorite AI to generate a Zod schema from your SQL.
+Tip: Use your favorite AI to generate a schema from your SQL.
 
 If using JSON data, leverage the built-in `parseJsonPreprocessor`.
 
+**With Zod:**
 ```typescript
-
 import { parseJsonPreprocessor } from '@a2lix/schemql'
 import { z } from 'zod'
 
@@ -53,14 +51,33 @@ export const zUserDb = z.object({
       role: z.enum(['user', 'admin']).default('user'),
     })
   ),
-  created_at: z.number().int(),
-  disabled_at: z.number().int().nullable(),
+  created_at: z.int(),
+  disabled_at: z.int().nullable(),
 })
 
 type UserDb = z.infer<typeof zUserDb>
+```
+
+**With ArkType:**
+```typescript
+import { type } from 'arktype'
+
+export const userDb = type({
+  id: 'string',
+  email: 'string',
+  metadata: type("string.json.parse").to({
+    role: "'user' | 'admin' = 'user'",
+  }),
+  created_at: 'number.epoch',
+  disabled_at: 'number.epoch | null',
+})
+
+type UserDb = typeof userDb.infer
+```
 
 // ...
 
+```typescript
 export interface DB {
   users: UserDb
   // ...other mappings
@@ -80,7 +97,7 @@ import type { DB } from '@/schema'
 
 const schemQl = new SchemQl<DB>({
   adapter: new BetterSqlite3Adapter('sqlite.db'),
-  shouldStringifyObjectParams: true,   // Optional. Automatically stringify objects (useful for JSON)
+  stringifyObjectParams: true,   // Optional. Automatically stringify objects (useful for JSON)
 })
 ```
 </details>
@@ -147,7 +164,7 @@ const allUsersPaginated = await schemQl.all({
 ```
 
 Automatically stringify JSON params 'metadata' (by schemQl if enabled)
-and get parsed JSON metadata, as well (if Zod preprocess set rightly)
+and get parsed JSON metadata, as well (if your schema preprocess is set rightly)
 
 ```typescript
 const firstSession = await schemQl.firstOrThrow({
@@ -239,7 +256,7 @@ const iterResults = await schemQl.iterate({
 
 Contributions are welcome! This library aims to remain lightweight and focused, so please keep PRs concise and aligned with this goal.
 
-This library relies solely on [Zod](https://github.com/colinhacks/zod), but it could also include support for other schema libraries, such as [@effect/schema](https://effect.website/docs/guides/schema/getting-started).
+This library relies on [Standard Schema](https://github.com/standard-schema/standard-schema) for schema validation, so you can use [Zod](https://zod.dev/), [ArkType](https://arktype.io/), [@effect/schema](https://effect.website/docs/schema/introduction/), or any compatible library.
 
 ## License
 

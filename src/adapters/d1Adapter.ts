@@ -5,7 +5,7 @@ import type { D1Database } from '@cloudflare/workers-types'
 export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
   public constructor(
     private db: D1Database,
-    private options = { verbose: false }
+    private options = { verbosity: 0 }
   ) {}
 
   public queryAll = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
@@ -18,8 +18,8 @@ export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
       try {
         const arrParams = params ? paramsOrder.map((key) => params[key]) : []
         const { results } = await stmt.bind(...arrParams).all<TResult>()
-        if (this.options.verbose) {
-          this.logSql(anonymousSql, arrParams)
+        if (this.options.verbosity) {
+          this.logSql(anonymousSql, arrParams, this.options.verbosity)
         }
 
         return results
@@ -39,8 +39,8 @@ export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
       try {
         const arrParams = params ? paramsOrder.map((key) => params[key]) : []
         const result = (await stmt.bind(...arrParams).first<TResult | undefined>()) ?? undefined
-        if (this.options.verbose) {
-          this.logSql(anonymousSql, arrParams)
+        if (this.options.verbosity) {
+          this.logSql(anonymousSql, arrParams, this.options.verbosity)
         }
 
         return result
@@ -86,14 +86,14 @@ export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
     return { sql: anonymousSql, paramsOrder }
   }
 
-  private logSql = (sql: string, arrParams: string[]) => {
+  private logSql = (sql: string, arrParams: string[], verbosity: number) => {
     const stringParams = arrParams.map((param) =>
       typeof param === 'string' ? `'${param}'` : param === null ? 'NULL' : param
     )
 
     let paramIndex = 0
     const interpolatedSql = sql.replace(/\?/g, () => stringParams[paramIndex++] ?? '?')
-    console.log(`\n${interpolatedSql}\n`)
+    console.log(`${verbosity > 1 ? `\n-- PREPARED --\n${sql}` : ''}\n++ EXECUTED ++\n${interpolatedSql}\n`)
   }
 }
 

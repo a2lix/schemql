@@ -8,12 +8,12 @@ export const zUserDb = z.object({
     parseJsonPreprocessor,
     z.object({
       role: z.enum(['user', 'admin']).default('user'),
-      email_variant: z.string().optional(),
-      email_verified_at: z.number().int().optional(),
+      email_variant: z.email().optional(),
+      email_verified_at: z.int().optional(),
     })
   ),
-  created_at: z.number().int(),
-  disabled_at: z.number().int().nullable(),
+  created_at: z.int(),
+  disabled_at: z.int().nullable(),
 })
 
 type UserDb = z.infer<typeof zUserDb>
@@ -27,8 +27,8 @@ export const zSessionDb = z.object({
       fingerprint: z.string().optional(),
     })
   ),
-  created_at: z.number().int(),
-  expires_at: z.number().int(),
+  created_at: z.int(),
+  expires_at: z.int(),
 })
 type SessionDb = z.infer<typeof zSessionDb>
 
