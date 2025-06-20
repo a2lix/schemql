@@ -21,6 +21,14 @@ jobs:
         version: latest
     - name: Install dependencies
       run: pnpm install
+
+    - name: Install build tools for native modules (better-sqlite3 issue /1)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential
+    - name: Rebuild better-sqlite3 for the current Node version (better-sqlite3 issue /2)
+      run: pnpm rebuild better-sqlite3
+
     - name: Setup Biome
       uses: biomejs/setup-biome@v2
       with:
