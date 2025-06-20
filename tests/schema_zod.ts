@@ -1,5 +1,5 @@
+import { z } from 'zod/v4'
 import { parseJsonPreprocessor } from '@/utils'
-import { z } from 'zod'
 
 export const zUserDb = z.object({
   id: z.string(),

@@ -30,8 +30,6 @@ jobs:
           registry-url: https://registry.npmjs.org/
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 8
       - run: pnpm install
       - run: pnpm build
       - run: pnpm publish --no-git-checks --access public

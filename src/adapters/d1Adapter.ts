@@ -1,6 +1,6 @@
+import type { D1Database } from '@cloudflare/workers-types'
 import { AdapterErrorCode, BaseAdapterError } from '@/adapters/baseAdapterError'
 import type { SchemQlAdapter } from '@/schemql'
-import type { D1Database } from '@cloudflare/workers-types'
 
 export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
   public constructor(

@@ -40,7 +40,7 @@ If using JSON data, leverage the built-in `parseJsonPreprocessor`.
 **With Zod:**
 ```typescript
 import { parseJsonPreprocessor } from '@a2lix/schemql'
-import { z } from 'zod'
+import { z } from 'zod/v4'
 
 export const zUserDb = z.object({
   id: z.string(),

@@ -17,10 +17,10 @@ jobs:
         node-version-file: .nvmrc
     - name: Install pnpm
       uses: pnpm/action-setup@v4
-      with:
-        version: 8
     - name: Install dependencies
       run: pnpm install
+    - name: Setup Biome
+      uses: biomejs/setup-biome@v2
     - name: Run Biome
       run: pnpm biome:ci
     - name: Run tests
