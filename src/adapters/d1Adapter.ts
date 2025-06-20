@@ -67,10 +67,10 @@ export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
     }
   }
 
-  public queryIterate = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
-    sql: string
+  public queryIterate = <_TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
+    _sql: string
   ) => {
-    return (params?: TParams) => {
+    return (_params?: TParams) => {
       throw new Error('Not implemented')
     }
   }
