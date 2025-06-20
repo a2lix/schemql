@@ -28,8 +28,8 @@ describe('NodeSqliteAdapter', () => {
     it('should return all rows matching the query', () => {
       const users = adapter.queryAll<{ id: number; name: string; email: string }>('SELECT * FROM users')()
       assert.strictEqual(users.length, 1)
-      assert.strictEqual(users[0]!.name, 'Alice')
-      assert.strictEqual(users[0]!.email, 'alice@example.com')
+      assert.strictEqual(users[0]?.name, 'Alice')
+      assert.strictEqual(users[0]?.email, 'alice@example.com')
     })
 
     it('should handle parameters correctly', () => {
@@ -41,8 +41,8 @@ describe('NodeSqliteAdapter', () => {
         'SELECT * FROM users WHERE name = :name'
       )({ name: 'Bob' })
       assert.strictEqual(users.length, 1)
-      assert.strictEqual(users[0]!.name, 'Bob')
-      assert.strictEqual(users[0]!.email, 'bob@example.com')
+      assert.strictEqual(users[0]?.name, 'Bob')
+      assert.strictEqual(users[0]?.email, 'bob@example.com')
     })
   })
 

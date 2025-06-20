@@ -1,10 +1,12 @@
-import type { z } from 'zod'
+import type * as zv3 from 'zod/v3'
+import type * as zv4 from 'zod/v4'
 
-// Zod Helpers
-export const parseJsonPreprocessor = (value: any, ctx: z.RefinementCtx) => {
-  if (typeof value === 'string') {
+type PreprocessCallback = Parameters<typeof zv4.preprocess>[0] & Parameters<typeof zv3.preprocess>[0]
+
+export const parseJsonPreprocessor: PreprocessCallback = (arg, ctx) => {
+  if (typeof arg === 'string') {
     try {
-      return JSON.parse(value)
+      return JSON.parse(arg)
     } catch (e) {
       ctx.addIssue({
         code: 'custom',
@@ -13,5 +15,5 @@ export const parseJsonPreprocessor = (value: any, ctx: z.RefinementCtx) => {
     }
   }
 
-  return value
+  return arg
 }

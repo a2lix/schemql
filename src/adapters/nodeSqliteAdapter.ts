@@ -68,7 +68,7 @@ export class NodeSqliteAdapter<T = unknown> implements SchemQlAdapter<T> {
     }
   }
 
-  public queryIterate = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
+  public queryIterate = <_TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
     sql: string
   ) => {
     const stmt = this.db.prepare(sql)

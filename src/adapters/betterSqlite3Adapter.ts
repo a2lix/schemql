@@ -1,7 +1,7 @@
-import { AdapterErrorCode, BaseAdapterError } from '@/adapters/baseAdapterError'
-import type { SchemQlAdapter } from '@/schemql'
 // @ts-ignore
 import type SQLite from 'better-sqlite3'
+import { AdapterErrorCode, BaseAdapterError } from '@/adapters/baseAdapterError'
+import type { SchemQlAdapter } from '@/schemql'
 
 export class BetterSqlite3Adapter<T = unknown> implements SchemQlAdapter<T> {
   public constructor(private db: SQLite.Database) {}
@@ -69,7 +69,7 @@ export class BetterSqlite3Adapter<T = unknown> implements SchemQlAdapter<T> {
     }
   }
 
-  public queryIterate = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
+  public queryIterate = <_TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
     sql: string
   ) => {
     const stmt = this.db.prepare(sql)
