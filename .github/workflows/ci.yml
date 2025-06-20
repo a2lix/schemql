@@ -23,6 +23,9 @@ jobs:
       run: pnpm install
     - name: Setup Biome
       uses: biomejs/setup-biome@v2
+      with:
+        # version: latest
+        version: 2.0.1
     - name: Run Biome
       run: pnpm biome:ci
     - name: Run tests
