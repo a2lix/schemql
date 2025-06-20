@@ -91,16 +91,16 @@
     "@standard-schema/spec": "^1.0.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@types/node": "^22.14.1",
-    "arktype": "^2.1.19",
-    "better-sqlite3": "^11.9.1",
-    "pkgroll": "^2.12.1",
+    "@biomejs/biome": "^2.0.2",
+    "@cloudflare/workers-types": "^4.20250620.0",
+    "@types/node": "^24.0.3",
+    "arktype": "^2.1.20",
+    "better-sqlite3": "^11.10.0",
+    "pkgroll": "^2.13.1",
     "ts-node": "^10.9.2",
-    "tsx": "^4.19.3",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3",
-    "zod": "4.0.0-beta.20250414T061543",
-    "@cloudflare/workers-types": "^4.20250414.0"
+    "zod": "^3.25.67"
   },
   "peerDependencies": {
     "@cloudflare/workers-types": "*",

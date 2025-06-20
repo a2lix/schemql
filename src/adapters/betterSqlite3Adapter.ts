@@ -1,7 +1,7 @@
-import { AdapterErrorCode, BaseAdapterError } from '@/adapters/baseAdapterError'
-import type { SchemQlAdapter } from '@/schemql'
 // @ts-ignore
 import type SQLite from 'better-sqlite3'
+import { AdapterErrorCode, BaseAdapterError } from '@/adapters/baseAdapterError'
+import type { SchemQlAdapter } from '@/schemql'
 
 export class BetterSqlite3Adapter<T = unknown> implements SchemQlAdapter<T> {
   public constructor(private db: SQLite.Database) {}

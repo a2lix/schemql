@@ -1,8 +1,8 @@
 import assert from 'node:assert'
 import { before, describe, it } from 'node:test'
-import { BetterSqlite3Adapter, SchemQlAdapterErrorCode } from '@/adapters/betterSqlite3Adapter'
 // @ts-ignore
 import SQLite from 'better-sqlite3'
+import { BetterSqlite3Adapter, SchemQlAdapterErrorCode } from '@/adapters/betterSqlite3Adapter'
 
 describe('BetterSqlite3Adapter', () => {
   let adapter: BetterSqlite3Adapter

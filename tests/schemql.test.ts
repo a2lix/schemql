@@ -1,7 +1,7 @@
 import assert from 'node:assert'
 import { describe, it } from 'node:test'
+import { z } from 'zod/v4'
 import { SchemQl, type SchemQlAdapter } from '@/index'
-import { z } from 'zod'
 import { type DB as DB_AT, tUserDb } from './schema_arktype'
 import { type DB, zSessionDb, zUserDb } from './schema_zod'
 
@@ -84,7 +84,7 @@ describe('SchemQl - queryFn related', () => {
   it('should return the expected result with async queryFns', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
-      adapter: new class extends AsyncAdapter {
+      adapter: new (class extends AsyncAdapter {
         override queryAll = (sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users')
           return async (params?: any) => {
@@ -95,11 +95,11 @@ describe('SchemQl - queryFn related', () => {
           assert.strictEqual(sql, 'SELECT * FROM users')
           return (params?: any) =>
             async function* () {
-              yield (await fixtureUsers.get('uuid-1'))
-              yield (await fixtureUsers.get('uuid-2'))
+              yield await fixtureUsers.get('uuid-1')
+              yield await fixtureUsers.get('uuid-2')
             }
         }
-      },
+      })(),
       stringifyObjectParams: true,
     })
     const results = await schemQl.all({})('SELECT * FROM users')
@@ -115,14 +115,14 @@ describe('SchemQl - queryFn related', () => {
   it('should return the expected result with array params', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
-      adapter: new class extends SyncAdapter {
+      adapter: new (class extends SyncAdapter {
         override queryFirst = (sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
           return (params?: any) => {
             return fixtureUsers.get(params?.id)
           }
         }
-      },
+      })(),
       stringifyObjectParams: true,
     })
     const iterResults = await schemQl.first({
@@ -147,14 +147,14 @@ describe('SchemQl - queryFn related', () => {
   it('should return the expected result with generator params', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
-      adapter: new class extends SyncAdapter {
+      adapter: new (class extends SyncAdapter {
         override queryFirst = (sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
           return (params?: any) => {
             return fixtureUsers.get(params?.id)
           }
         }
-      },
+      })(),
       stringifyObjectParams: true,
     })
     const iterResults = await schemQl.first({
@@ -175,14 +175,14 @@ describe('SchemQl - queryFn related', () => {
   it('should return the expected result with async generator params', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
-      adapter: new class extends SyncAdapter {
+      adapter: new (class extends SyncAdapter {
         override queryFirst = (sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users WHERE users.id = :id')
           return (params?: any) => {
             return fixtureUsers.get(params?.id)
           }
         }
-      },
+      })(),
       stringifyObjectParams: true,
     })
     const iterResults = await schemQl.first({
@@ -203,7 +203,7 @@ describe('SchemQl - queryFn related', () => {
   it('should return the expected result with iterate method', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
-      adapter: new class extends SyncAdapter {
+      adapter: new (class extends SyncAdapter {
         override queryIterate = (sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users')
           return (params?: any) =>
@@ -212,7 +212,7 @@ describe('SchemQl - queryFn related', () => {
               yield fixtureUsers.get('uuid-2')
             }
         }
-      },
+      })(),
       stringifyObjectParams: true,
     })
     const iterResults = await schemQl.iterate({
@@ -230,14 +230,14 @@ describe('SchemQl - resultSchema related', () => {
   it('should return the expected result, parsed by resultSchema if provided - Zod', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
-      adapter: new class extends SyncAdapter {
+      adapter: new (class extends SyncAdapter {
         override queryAll = (sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users')
-            return (params?: any) => {
-              return Array.from(fixtureUsers.values())
-            }
+          return (params?: any) => {
+            return Array.from(fixtureUsers.values())
+          }
         }
-      },
+      })(),
       stringifyObjectParams: true,
     })
     const results = await schemQl.all({
@@ -265,14 +265,14 @@ describe('SchemQl - resultSchema related', () => {
   it('should return the expected result, parsed by resultSchema if provided - ArkType', async () => {
     const schemQl = new SchemQl<DB_AT>({
       // biome-ignore format:
-      adapter: new class extends SyncAdapter {
+      adapter: new (class extends SyncAdapter {
         override queryAll = (sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users')
-            return (params?: any) => {
-              return Array.from(fixtureUsers.values())
-            }
+          return (params?: any) => {
+            return Array.from(fixtureUsers.values())
+          }
         }
-      },
+      })(),
       stringifyObjectParams: true,
     })
     const results = await schemQl.all({
@@ -302,7 +302,7 @@ describe('SchemQl - paramsSchema related', () => {
   it('should return the expected result, params parsed by paramsSchema if provided', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
-      adapter: new class extends SyncAdapter {
+      adapter: new (class extends SyncAdapter {
         override queryFirst = (sql: string) => {
           assert.strictEqual(sql, 'SELECT * FROM users WHERE id = :id')
           return (params?: any) => {
@@ -310,7 +310,7 @@ describe('SchemQl - paramsSchema related', () => {
             return undefined
           }
         }
-      },
+      })(),
       stringifyObjectParams: true,
     })
     const result = await schemQl.first({
@@ -328,12 +328,12 @@ describe('SchemQl - sql literal', () => {
   it('should return the expected result', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
-      adapter: new class extends SyncAdapter {
+      adapter: new (class extends SyncAdapter {
         override queryFirst = (sql: string) => {
           assert.strictEqual(
             sql,
-// biome-ignore format:
-`
+            // biome-ignore format:
+            `
 SELECT
   *,
   LENGTH(users.id) AS length_id
@@ -354,7 +354,7 @@ WHERE
             }
           }
         }
-      },
+      })(),
       stringifyObjectParams: true,
     })
     const result = await schemQl.first({
@@ -391,12 +391,12 @@ WHERE
   it('should return the expected result, undefined case', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
-      adapter: new class extends SyncAdapter {
+      adapter: new (class extends SyncAdapter {
         override queryFirst = (sql: string) => {
           assert.strictEqual(
             sql,
-// biome-ignore format:
-`
+            // biome-ignore format:
+            `
 SELECT
   *,
   LENGTH(users.id) AS length_id
@@ -410,7 +410,7 @@ WHERE
             return undefined
           }
         }
-      },
+      })(),
       stringifyObjectParams: true,
     })
     const result = await schemQl.first({
@@ -440,12 +440,12 @@ describe('SchemQl - sql literal advanced', () => {
   it('should return the expected result - with object helper', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
-      adapter: new class extends SyncAdapter {
+      adapter: new (class extends SyncAdapter {
         override queryFirst = (sql: string) => {
           assert.strictEqual(
             sql,
-// biome-ignore format:
-`
+            // biome-ignore format:
+            `
 INSERT INTO
   users (id, email, metadata)
 VAlUES
@@ -468,7 +468,7 @@ RETURNING *
             }
           }
         }
-      },
+      })(),
       stringifyObjectParams: true,
     })
     const result = await schemQl.first({
@@ -509,12 +509,12 @@ RETURNING *
   it('should return the expected result - with object helper - quoted', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
-      adapter: new class extends SyncAdapter {
+      adapter: new (class extends SyncAdapter {
         override queryFirst = (sql: string) => {
           assert.strictEqual(
             sql,
-// biome-ignore format:
-`
+            // biome-ignore format:
+            `
 INSERT INTO
   "users" ("id", "email", "metadata")
 VAlUES
@@ -537,7 +537,7 @@ RETURNING *
             }
           }
         }
-      },
+      })(),
       stringifyObjectParams: true,
       quoteSqlIdentifiers: true,
     })
@@ -579,12 +579,12 @@ RETURNING *
   it('should return the expected result - with sql helper', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
-      adapter: new class extends SyncAdapter {
+      adapter: new (class extends SyncAdapter {
         override queryFirst = (sql: string) => {
           assert.strictEqual(
             sql,
-// biome-ignore format:
-`
+            // biome-ignore format:
+            `
 UPDATE users
 SET
   metadata = JSON_SET(users.metadata,
@@ -611,7 +611,7 @@ RETURNING *
             }
           }
         }
-      },
+      })(),
       stringifyObjectParams: true,
     })
     const result = await schemQl.first({
@@ -654,12 +654,12 @@ RETURNING *
   it('should return the expected result - with sqlCond & sqlRaw helpers', async () => {
     const schemQl = new SchemQl<DB>({
       // biome-ignore format:
-      adapter: new class extends SyncAdapter {
+      adapter: new (class extends SyncAdapter {
         override queryAll = (sql: string) => {
           assert.strictEqual(
             normalizeString(sql),
-// biome-ignore format:
-normalizeString(`
+            // biome-ignore format:
+            normalizeString(`
 WITH
 _user_scope AS (
   SELECT *
@@ -686,7 +686,7 @@ LEFT JOIN sessions s ON s.id = _us.id
             return []
           }
         }
-      },
+      })(),
       stringifyObjectParams: true,
     })
     const result = await schemQl.all({
