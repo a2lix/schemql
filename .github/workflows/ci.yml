@@ -27,6 +27,7 @@ jobs:
         # version: latest
         version: 2.0.0
     - name: Run Biome
-      run: pnpm biome:ci
+      # run: pnpm biome:ci
+      run: biome ci ./src ./tests
     - name: Run tests
       run: pnpm test
