@@ -95,7 +95,7 @@
     "@cloudflare/workers-types": "^4.20250620.0",
     "@types/node": "^24.0.3",
     "arktype": "^2.1.20",
-    "better-sqlite3": "^11.10.0",
+    "better-sqlite3": "^12.1.0",
     "pkgroll": "^2.13.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
