@@ -1,8 +1,8 @@
 import assert from 'node:assert'
 import { before, describe, it } from 'node:test'
-import { BetterSqlite3Adapter, SchemQlAdapterErrorCode } from '@/adapters/betterSqlite3Adapter'
 // @ts-ignore
 import SQLite from 'better-sqlite3'
+import { BetterSqlite3Adapter, SchemQlAdapterErrorCode } from '@/adapters/betterSqlite3Adapter'
 
 describe('BetterSqlite3Adapter', () => {
   let adapter: BetterSqlite3Adapter
@@ -29,8 +29,8 @@ describe('BetterSqlite3Adapter', () => {
     it('should return all rows matching the query', () => {
       const users = adapter.queryAll<{ id: number; name: string; email: string }>('SELECT * FROM users')()
       assert.strictEqual(users.length, 1)
-      assert.strictEqual(users[0]!.name, 'Alice')
-      assert.strictEqual(users[0]!.email, 'alice@example.com')
+      assert.strictEqual(users[0]?.name, 'Alice')
+      assert.strictEqual(users[0]?.email, 'alice@example.com')
     })
 
     it('should handle parameters correctly', () => {
@@ -42,8 +42,8 @@ describe('BetterSqlite3Adapter', () => {
         'SELECT * FROM users WHERE name = :name'
       )({ name: 'Bob' })
       assert.strictEqual(users.length, 1)
-      assert.strictEqual(users[0]!.name, 'Bob')
-      assert.strictEqual(users[0]!.email, 'bob@example.com')
+      assert.strictEqual(users[0]?.name, 'Bob')
+      assert.strictEqual(users[0]?.email, 'bob@example.com')
     })
   })
 

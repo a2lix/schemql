@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
   "formatter": {
     "useEditorconfig": true,
     "formatWithErrors": true,
@@ -11,22 +11,14 @@
       "recommended": true,
       "complexity": {
         "noUselessUndefinedInitialization": "error",
-        "noBannedTypes": "off"
+        "noBannedTypes": "off",
+        "noUselessEscapeInRegex": "error"
       },
       "correctness": {
         "noUnusedImports": "error",
         "noUnusedPrivateClassMembers": "error",
-        "noUnusedVariables": "warn",
-        "useHookAtTopLevel": "error",
-        "noConstantCondition": "warn"
-      },
-      "nursery": {
-        "noDuplicateCustomProperties": "error",
-        "noDynamicNamespaceImportAccess": "error",
-        "noIrregularWhitespace": "error",
-        "noUselessEscapeInRegex": "error",
-        "useTrimStartEnd": "error",
-        "noDuplicateElseIf": "error"
+        "noUnusedVariables": "error",
+        "useHookAtTopLevel": "error"
       },
       "style": {
         "noYodaExpression": "error",
@@ -37,16 +29,34 @@
         "useFilenamingConvention": "error",
         "useForOf": "error",
         "useFragmentSyntax": "error",
-        "useShorthandArrayType": "error",
+        "useNamingConvention": {
+          "level": "warn",
+          "options": {
+            "strictCase": false,
+            "conventions": [
+              {
+                "selector": {
+                  "kind": "objectLiteralMember"
+                },
+                "formats": ["camelCase", "snake_case"]
+              }
+            ]
+          }
+        },
         "useShorthandAssign": "error",
-        "useSingleCaseStatement": "error"
+        "useTrimStartEnd": "error"
       },
       "suspicious": {
         "noDuplicateAtImportRules": "error",
         "noEmptyBlock": "error",
         "useErrorMessage": "error",
         "useAwait": "error",
-        "noExplicitAny": "warn"
+        "noDuplicateCustomProperties": "error",
+        "noIrregularWhitespace": "error",
+        "noDuplicateElseIf": "error"
+      },
+      "performance": {
+        "noDynamicNamespaceImportAccess": "error"
       }
     }
   },
