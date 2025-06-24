@@ -21,7 +21,7 @@ jobs:
       with:
         version: latest
     - name: Install dependencies
-      run: pnpm install --yes
+      run: pnpm install
 
     # - name: Install build tools for native modules (better-sqlite3 issue /1)
     #   run: |
