@@ -91,7 +91,7 @@
     "@standard-schema/spec": "^1.0.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.0.2",
+    "@biomejs/biome": "^2.0.5",
     "@cloudflare/workers-types": "^4.20250620.0",
     "@types/node": "^24.0.3",
     "arktype": "^2.1.20",
