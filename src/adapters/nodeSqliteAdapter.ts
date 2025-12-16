@@ -77,14 +77,6 @@ export class NodeSqliteAdapter<T = unknown> implements SchemQlAdapter<T> {
       return (params ? stmt.iterate(params) : stmt.iterate()) as any
     }
   }
-
-  private handleTypeErrorRun = (stmt: SQLite.StatementSync, params: Record<string, any> | undefined) => {
-    try {
-      params ? stmt.run(params) : stmt.run()
-    } catch (e) {
-      throw SchemQlAdapterError.createFromNodeSqlite(e)
-    }
-  }
 }
 
 export class SchemQlAdapterError extends BaseAdapterError {

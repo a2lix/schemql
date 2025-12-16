@@ -2,23 +2,26 @@
   "compilerOptions": {
     /* https://www.totaltypescript.com/tsconfig-cheat-sheet */
     /* Base Options: */
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "target": "ES2021",
-    "allowJs": true,
-    "resolveJsonModule": true,
-    "moduleDetection": "force",
-    "isolatedModules": true,
+    "target": "es2022",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "lib": ["es2022"],
     "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
     /* Strictness */
     "strict": true,
-    "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
-    "noUncheckedSideEffectImports": true,
-    "module": "preserve",
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    /* Type Checking */
     "noEmit": true,
+    /* Aliases */
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["./src/*"]
     }
   },
 }
