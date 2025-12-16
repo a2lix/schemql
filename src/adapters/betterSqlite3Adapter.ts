@@ -1,5 +1,5 @@
-// @ts-ignore
-import type SQLite from 'better-sqlite3'
+// @ts-expect-error
+import type * as SQLite from 'better-sqlite3'
 import { AdapterErrorCode, BaseAdapterError } from '@/adapters/baseAdapterError'
 import type { SchemQlAdapter } from '@/schemql'
 

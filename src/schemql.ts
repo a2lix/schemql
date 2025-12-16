@@ -95,28 +95,17 @@ type SchemQlSqlHelper<TResultSchema extends StandardSchemaV1 | undefined, TParam
 
 // --- Configuration ---
 type SchemQlOptions = {
-  adapter: SchemQlAdapter
+  readonly adapter: SchemQlAdapter
   /** @deprecated Use `stringifyObjectParams` instead */
-  shouldStringifyObjectParams?: boolean
-  stringifyObjectParams?: boolean
-  quoteSqlIdentifiers?: boolean
+  readonly shouldStringifyObjectParams?: boolean
+  readonly stringifyObjectParams?: boolean
+  readonly quoteSqlIdentifiers?: boolean
 }
 
 // --- Executor Parameter and Result Types ---
-type IsIterativeExecution<TParams> = TParams extends any[]
-  ? true
-  : TParams extends AsyncGeneratorFn<any>
-    ? true
-    : TParams extends GeneratorFn<any>
-      ? true
-      : false
-type ParamsType<T> = T extends AsyncGeneratorFn<infer P>
-  ? P
-  : T extends GeneratorFn<infer P>
-    ? P
-    : T extends Array<infer P>
-      ? P
-      : T
+type IsIterativeExecution<TParams> = TParams extends any[] | GeneratorFn<any> | AsyncGeneratorFn<any> ? true : false
+// biome-ignore lint/suspicious/noRedeclare: <>
+type ParamsType<T> = T extends AsyncGeneratorFn<infer P> | GeneratorFn<infer P> | Array<infer P> ? P : T
 type SimpleQueryExecutorResult<
   TQueryResult,
   TResultSchema extends StandardSchemaV1 | undefined,

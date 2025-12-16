@@ -1,6 +1,6 @@
 {
   "name": "@a2lix/schemql",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "A lightweight TypeScript library that enhances your SQL workflow by combining raw SQL with targeted type safety and schema validation",
   "license": "MIT",
   "keywords": [
@@ -76,6 +76,16 @@
         "types": "./dist/adapters/d1Adapter.d.cts",
         "default": "./dist/adapters/d1Adapter.cjs"
       }
+    },
+    "./adapters/node-sqlite": {
+      "import": {
+        "types": "./dist/adapters/nodeSqliteAdapter.d.mts",
+        "default": "./dist/adapters/nodeSqliteAdapter.mjs"
+      },
+      "require": {
+        "types": "./dist/adapters/nodeSqliteAdapter.d.cts",
+        "default": "./dist/adapters/nodeSqliteAdapter.cjs"
+      }
     }
   },
   "files": [
@@ -88,22 +98,21 @@
     "build": "pkgroll --clean-dist --minify --src src/"
   },
   "dependencies": {
-    "@standard-schema/spec": "^1.0.0"
+    "@standard-schema/spec": "^1.1.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.0.5",
-    "@cloudflare/workers-types": "^4.20250620.0",
-    "@types/node": "^24.0.3",
-    "arktype": "^2.1.20",
-    "better-sqlite3": "^12.1.0",
-    "pkgroll": "^2.13.1",
+    "@biomejs/biome": "^2.3.9",
+    "@cloudflare/workers-types": "^4.20251011.0",
+    "@types/node": "^24.10.4",
+    "arktype": "^2.1.29",
+    "better-sqlite3": "^12.5.0",
+    "pkgroll": "^2.21.4",
     "ts-node": "^10.9.2",
-    "tsx": "^4.20.3",
-    "typescript": "^5.8.3",
-    "zod": "^3.25.67"
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "zod": "^4.2.1"
   },
-  "peerDependencies": {
-    "@cloudflare/workers-types": "*",
-    "better-sqlite3": "*"
+  "pnpm": {
+    "onlyBuiltDependencies": ["better-sqlite3"]
   }
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert'
 import { before, describe, it } from 'node:test'
-// @ts-ignore
+// @ts-expect-error
 import SQLite from 'better-sqlite3'
 import { BetterSqlite3Adapter, SchemQlAdapterErrorCode } from '@/adapters/betterSqlite3Adapter'
 
