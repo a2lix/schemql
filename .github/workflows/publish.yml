@@ -38,4 +38,4 @@ jobs:
           version: latest
       - run: pnpm install
       - run: pnpm build
-      - run: pnpm publish
+      - run: pnpm publish --no-git-checks --access public
