@@ -23,8 +23,8 @@ type GeneratorFn<T> = () => Generator<T, void, unknown>
 type AsyncGeneratorFn<T> = () => AsyncGenerator<T, void, unknown>
 
 // --- DB Schema Introspection Types ---
-type TableNames<DB> = Extract<keyof DB, string>
-type ColumnNames<DB, T extends TableNames<DB>> = Extract<keyof DB[T], string>
+type TableNames<DB> = keyof DB & string
+type ColumnNames<DB, T extends TableNames<DB>> = keyof DB[T] & string
 type TableColumnSelection<DB> = {
   [T in TableNames<DB>]?: ColumnNames<DB, T>[] // Unable to prevent duplicates :/
 }
@@ -82,7 +82,7 @@ type SqlOrBuilderFn<TResultSchema extends StandardSchemaV1 | undefined, TParams 
   | ((s: SchemQlSqlHelper<TResultSchema, TParams, DB>) => string)
 type SchemQlSqlHelper<TResultSchema extends StandardSchemaV1 | undefined, TParams extends Record<string, any>, DB> = {
   sql: <
-    T extends SqlTemplateValues<
+    const T extends SqlTemplateValues<
       TResultSchema extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<TResultSchema> : unknown,
       TParams,
       DB
