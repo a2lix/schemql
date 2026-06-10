@@ -1,13 +1,14 @@
 // @ts-expect-error
 import type * as SQLite from 'better-sqlite3'
-import { AdapterErrorCode, BaseAdapterError } from '@/adapters/baseAdapterError'
-import type { SchemQlAdapter } from '@/schemql'
+
+import { AdapterErrorCode, BaseAdapterError } from '#adapters/baseAdapterError'
+import type { SchemQlAdapter } from '#schemql'
 
 export class BetterSqlite3Adapter<T = unknown> implements SchemQlAdapter<T> {
   public constructor(private db: SQLite.Database) {}
 
   public queryAll = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
-    sql: string
+    sql: string,
   ) => {
     let stmt: SQLite.Statement
     try {
@@ -30,7 +31,7 @@ export class BetterSqlite3Adapter<T = unknown> implements SchemQlAdapter<T> {
   }
 
   public queryFirst = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
-    sql: string
+    sql: string,
   ) => {
     let stmt: SQLite.Statement
     try {
@@ -56,7 +57,7 @@ export class BetterSqlite3Adapter<T = unknown> implements SchemQlAdapter<T> {
     TResult,
     TParams extends Record<string, any> | undefined = Record<string, any> | undefined,
   >(
-    sql: string
+    sql: string,
   ) => {
     const prepareFirst = this.queryFirst<TResult, TParams>(sql)
 
@@ -70,7 +71,7 @@ export class BetterSqlite3Adapter<T = unknown> implements SchemQlAdapter<T> {
   }
 
   public queryIterate = <_TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
-    sql: string
+    sql: string,
   ) => {
     const stmt = this.db.prepare(sql)
 
@@ -81,6 +82,7 @@ export class BetterSqlite3Adapter<T = unknown> implements SchemQlAdapter<T> {
 
   private handleTypeErrorRun = (stmt: SQLite.Statement, params: Record<string, any> | undefined) => {
     try {
+      // oxlint-disable-next-line eslint/no-unused-expressions
       params ? stmt.run(params) : stmt.run()
     } catch (e) {
       throw SchemQlAdapterError.createFromBetterSqlite3(e)

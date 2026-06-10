@@ -17,7 +17,7 @@ jobs:
         with:
           node-version-file: .nvmrc
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: latest
       - run: pnpm install
@@ -33,7 +33,7 @@ jobs:
           node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org/
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: latest
       - run: pnpm install

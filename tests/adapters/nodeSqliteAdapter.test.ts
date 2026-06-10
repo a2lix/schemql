@@ -1,7 +1,8 @@
 import assert from 'node:assert'
 import SQLite from 'node:sqlite'
 import { before, describe, it } from 'node:test'
-import { NodeSqliteAdapter, SchemQlAdapterErrorCode } from '@/adapters/nodeSqliteAdapter'
+
+import { NodeSqliteAdapter, SchemQlAdapterErrorCode } from '#adapters/nodeSqliteAdapter'
 
 describe('NodeSqliteAdapter', () => {
   let adapter: NodeSqliteAdapter
@@ -38,7 +39,7 @@ describe('NodeSqliteAdapter', () => {
       `)({ name: 'Bob', email: 'bob@example.com' })
 
       const users = adapter.queryAll<{ id: number; name: string; email: string }>(
-        'SELECT * FROM users WHERE name = :name'
+        'SELECT * FROM users WHERE name = :name',
       )({ name: 'Bob' })
       assert.strictEqual(users.length, 1)
       assert.strictEqual(users[0]?.name, 'Bob')
@@ -55,7 +56,7 @@ describe('NodeSqliteAdapter', () => {
 
     it('should handle parameters correctly', () => {
       const user = adapter.queryFirst<{ id: number; name: string; email: string }>(
-        'SELECT * FROM users WHERE name = :name'
+        'SELECT * FROM users WHERE name = :name',
       )({ name: 'Alice' })
       assert.strictEqual(user?.name, 'Alice')
       assert.strictEqual(user?.email, 'alice@example.com')
@@ -63,7 +64,7 @@ describe('NodeSqliteAdapter', () => {
 
     it('should return undefined if no rows match the query', () => {
       const user = adapter.queryFirst<{ id: number; name: string; email: string }>(
-        'SELECT * FROM users WHERE name = :name'
+        'SELECT * FROM users WHERE name = :name',
       )({ name: 'Charlie' })
       assert.strictEqual(user, undefined)
     })
@@ -78,7 +79,7 @@ describe('NodeSqliteAdapter', () => {
 
     it('should handle parameters correctly', () => {
       const user = adapter.queryFirstOrThrow<{ id: number; name: string; email: string }>(
-        'SELECT * FROM users WHERE name = :name'
+        'SELECT * FROM users WHERE name = :name',
       )({ name: 'Alice' })
       assert.strictEqual(user.name, 'Alice')
       assert.strictEqual(user.email, 'alice@example.com')
@@ -88,12 +89,12 @@ describe('NodeSqliteAdapter', () => {
       assert.throws(
         () =>
           adapter.queryFirstOrThrow<{ id: number; name: string; email: string }>(
-            'SELECT * FROM users WHERE name = :name'
+            'SELECT * FROM users WHERE name = :name',
           )({ name: 'Charlie' }),
         {
           code: SchemQlAdapterErrorCode.NoResult,
           message: 'No result',
-        }
+        },
       )
     })
   })
@@ -117,7 +118,7 @@ describe('NodeSqliteAdapter', () => {
 
     it('should handle parameters correctly', () => {
       const iterator = adapter.queryIterate<{ id: number; name: string; email: string }>(
-        'SELECT * FROM users WHERE name = :name'
+        'SELECT * FROM users WHERE name = :name',
       )({ name: 'Alice' })
       let result = iterator.next()
       assert.strictEqual(result.done, false)
@@ -140,7 +141,7 @@ describe('NodeSqliteAdapter', () => {
         {
           code: SchemQlAdapterErrorCode.UniqueConstraint,
           message: 'UNIQUE constraint failed: users.email',
-        }
+        },
       )
     })
 
@@ -163,7 +164,7 @@ describe('NodeSqliteAdapter', () => {
         {
           code: SchemQlAdapterErrorCode.ForeignkeyConstraint,
           message: 'FOREIGN KEY constraint failed',
-        }
+        },
       )
     })
 
@@ -176,7 +177,7 @@ describe('NodeSqliteAdapter', () => {
         {
           code: SchemQlAdapterErrorCode.NotnullConstraint,
           message: 'NOT NULL constraint failed: users.email',
-        }
+        },
       )
     })
 
@@ -198,7 +199,7 @@ describe('NodeSqliteAdapter', () => {
         {
           code: SchemQlAdapterErrorCode.CheckConstraint,
           message: 'CHECK constraint failed: price > 0',
-        }
+        },
       )
     })
 
@@ -212,7 +213,7 @@ describe('NodeSqliteAdapter', () => {
         {
           code: SchemQlAdapterErrorCode.UniqueConstraint,
           message: 'UNIQUE constraint failed: users.id',
-        }
+        },
       )
     })
 
@@ -225,7 +226,7 @@ describe('NodeSqliteAdapter', () => {
         {
           code: SchemQlAdapterErrorCode.Generic,
           message: 'no such table: non_existent_table',
-        }
+        },
       )
     })
   })

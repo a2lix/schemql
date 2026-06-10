@@ -14,7 +14,7 @@ export class BaseAdapterError extends Error {
   public constructor(
     message: string,
     public code: AdapterErrorCode,
-    public originalError?: Error
+    public originalError?: Error,
   ) {
     super(message)
     this.name = 'AdapterError'

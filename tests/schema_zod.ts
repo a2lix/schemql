@@ -1,5 +1,6 @@
 import { z } from 'zod/v4'
-import { parseJsonPreprocessor } from '@/utils'
+
+import { parseJsonPreprocessor } from '#utils'
 
 export const zUserDb = z.object({
   id: z.string(),
@@ -10,7 +11,7 @@ export const zUserDb = z.object({
       role: z.enum(['user', 'admin']).default('user'),
       email_variant: z.email().optional(),
       email_verified_at: z.int().optional(),
-    })
+    }),
   ),
   created_at: z.int(),
   disabled_at: z.int().nullable(),
@@ -25,7 +26,7 @@ export const zSessionDb = z.object({
     parseJsonPreprocessor,
     z.object({
       fingerprint: z.string().optional(),
-    })
+    }),
   ),
   created_at: z.int(),
   expires_at: z.int(),
