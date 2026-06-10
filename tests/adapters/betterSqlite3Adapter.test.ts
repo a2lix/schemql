@@ -1,8 +1,10 @@
 import assert from 'node:assert'
 import { before, describe, it } from 'node:test'
+
 // @ts-expect-error
 import SQLite from 'better-sqlite3'
-import { BetterSqlite3Adapter, SchemQlAdapterErrorCode } from '@/adapters/betterSqlite3Adapter'
+
+import { BetterSqlite3Adapter, SchemQlAdapterErrorCode } from '#adapters/betterSqlite3Adapter'
 
 describe('BetterSqlite3Adapter', () => {
   let adapter: BetterSqlite3Adapter
@@ -39,7 +41,7 @@ describe('BetterSqlite3Adapter', () => {
       `)({ name: 'Bob', email: 'bob@example.com' })
 
       const users = adapter.queryAll<{ id: number; name: string; email: string }>(
-        'SELECT * FROM users WHERE name = :name'
+        'SELECT * FROM users WHERE name = :name',
       )({ name: 'Bob' })
       assert.strictEqual(users.length, 1)
       assert.strictEqual(users[0]?.name, 'Bob')
@@ -56,7 +58,7 @@ describe('BetterSqlite3Adapter', () => {
 
     it('should handle parameters correctly', () => {
       const user = adapter.queryFirst<{ id: number; name: string; email: string }>(
-        'SELECT * FROM users WHERE name = :name'
+        'SELECT * FROM users WHERE name = :name',
       )({ name: 'Alice' })
       assert.strictEqual(user?.name, 'Alice')
       assert.strictEqual(user?.email, 'alice@example.com')
@@ -64,7 +66,7 @@ describe('BetterSqlite3Adapter', () => {
 
     it('should return undefined if no rows match the query', () => {
       const user = adapter.queryFirst<{ id: number; name: string; email: string }>(
-        'SELECT * FROM users WHERE name = :name'
+        'SELECT * FROM users WHERE name = :name',
       )({ name: 'Charlie' })
       assert.strictEqual(user, undefined)
     })
@@ -79,7 +81,7 @@ describe('BetterSqlite3Adapter', () => {
 
     it('should handle parameters correctly', () => {
       const user = adapter.queryFirstOrThrow<{ id: number; name: string; email: string }>(
-        'SELECT * FROM users WHERE name = :name'
+        'SELECT * FROM users WHERE name = :name',
       )({ name: 'Alice' })
       assert.strictEqual(user.name, 'Alice')
       assert.strictEqual(user.email, 'alice@example.com')
@@ -89,12 +91,12 @@ describe('BetterSqlite3Adapter', () => {
       assert.throws(
         () =>
           adapter.queryFirstOrThrow<{ id: number; name: string; email: string }>(
-            'SELECT * FROM users WHERE name = :name'
+            'SELECT * FROM users WHERE name = :name',
           )({ name: 'Charlie' }),
         {
           code: SchemQlAdapterErrorCode.NoResult,
           message: 'No result',
-        }
+        },
       )
     })
   })
@@ -119,7 +121,7 @@ describe('BetterSqlite3Adapter', () => {
 
     it('should handle parameters correctly', () => {
       const iterator = adapter.queryIterate<{ id: number; name: string; email: string }>(
-        'SELECT * FROM users WHERE name = :name'
+        'SELECT * FROM users WHERE name = :name',
       )({ name: 'Alice' })
       let result = iterator.next()
       assert.strictEqual(result.done, false)
@@ -142,7 +144,7 @@ describe('BetterSqlite3Adapter', () => {
         {
           code: SchemQlAdapterErrorCode.UniqueConstraint,
           message: 'UNIQUE constraint failed: users.email',
-        }
+        },
       )
     })
 
@@ -165,7 +167,7 @@ describe('BetterSqlite3Adapter', () => {
         {
           code: SchemQlAdapterErrorCode.ForeignkeyConstraint,
           message: 'FOREIGN KEY constraint failed',
-        }
+        },
       )
     })
 
@@ -178,7 +180,7 @@ describe('BetterSqlite3Adapter', () => {
         {
           code: SchemQlAdapterErrorCode.NotnullConstraint,
           message: 'NOT NULL constraint failed: users.email',
-        }
+        },
       )
     })
 
@@ -200,7 +202,7 @@ describe('BetterSqlite3Adapter', () => {
         {
           code: SchemQlAdapterErrorCode.CheckConstraint,
           message: 'CHECK constraint failed: price > 0',
-        }
+        },
       )
     })
 
@@ -213,7 +215,7 @@ describe('BetterSqlite3Adapter', () => {
         {
           code: SchemQlAdapterErrorCode.PrimarykeyConstraint,
           message: 'UNIQUE constraint failed: users.id',
-        }
+        },
       )
     })
 
@@ -226,7 +228,7 @@ describe('BetterSqlite3Adapter', () => {
         {
           code: SchemQlAdapterErrorCode.Generic,
           message: 'no such table: non_existent_table',
-        }
+        },
       )
     })
   })

@@ -1,15 +1,16 @@
 import type { D1Database } from '@cloudflare/workers-types'
-import { AdapterErrorCode, BaseAdapterError } from '@/adapters/baseAdapterError'
-import type { SchemQlAdapter } from '@/schemql'
+
+import { AdapterErrorCode, BaseAdapterError } from '#adapters/baseAdapterError'
+import type { SchemQlAdapter } from '#schemql'
 
 export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
   public constructor(
     private db: D1Database,
-    private options = { verbosity: 0 }
+    private options = { verbosity: 0 },
   ) {}
 
   public queryAll = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
-    sql: string
+    sql: string,
   ) => {
     const { sql: anonymousSql, paramsOrder } = this.transformToAnonymousParams(sql)
     const stmt = this.db.prepare(anonymousSql)
@@ -30,7 +31,7 @@ export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
   }
 
   public queryFirst = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
-    sql: string
+    sql: string,
   ) => {
     const { sql: anonymousSql, paramsOrder } = this.transformToAnonymousParams(sql)
     const stmt = this.db.prepare(anonymousSql)
@@ -54,7 +55,7 @@ export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
     TResult,
     TParams extends Record<string, any> | undefined = Record<string, any> | undefined,
   >(
-    sql: string
+    sql: string,
   ) => {
     const prepareFirst = this.queryFirst<TResult, TParams>(sql)
 
@@ -68,7 +69,7 @@ export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
   }
 
   public queryIterate = <_TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
-    _sql: string
+    _sql: string,
   ) => {
     return (_params?: TParams) => {
       throw new Error('Not implemented')
@@ -88,7 +89,7 @@ export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
 
   private logSql = (sql: string, arrParams: string[], verbosity: number) => {
     const stringParams = arrParams.map((param) =>
-      typeof param === 'string' ? `'${param}'` : param === null ? 'NULL' : param
+      typeof param === 'string' ? `'${param}'` : param === null ? 'NULL' : param,
     )
 
     let paramIndex = 0
@@ -100,6 +101,7 @@ export class D1Adapter<T = unknown> implements SchemQlAdapter<T> {
 export class SchemQlAdapterError extends BaseAdapterError {
   public static createFromD1 = (error: Error) => {
     // https://github.com/prisma/prisma/blob/main/packages/adapter-d1/src/utils.ts
+    // oxlint-disable-next-line unicorn/consistent-function-scoping
     const computeCode = (message: string) => {
       if (message.startsWith('D1_ERROR:')) {
         if (message.startsWith('D1_ERROR: UNIQUE constraint failed')) {

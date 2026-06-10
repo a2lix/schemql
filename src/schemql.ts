@@ -10,7 +10,7 @@ export interface SchemQlAdapter<T = unknown> {
 
 // --- Core Function Types ---
 type QueryFn<TQueryResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined> = (
-  sql: string
+  sql: string,
 ) => (params?: TParams) => TQueryResult | Promise<TQueryResult>
 type IterativeQueryFn<
   TQueryResult,
@@ -33,27 +33,29 @@ type ValidTableColumnCombinations<DB> = {
 }[TableNames<DB>]
 
 // --- JSON Path Types ---
-type JsonPathForObjectArrow<T, P extends string = ''> = T extends Record<string, any>
-  ? {
-      [K in keyof T & string]:
-        | `${P}->${K}`
-        | `${P}->${K}-`
-        | `${P}->>${K}`
-        | `${P}->>${K}-`
-        | (NonNullable<T[K]> extends Record<string, any>
-            ? `${P}->${K}${JsonPathForObjectArrow<NonNullable<T[K]>, ''>}`
-            : never)
-    }[keyof T & string]
-  : ''
-type JsonPathForObjectDot<T, P extends string = ''> = T extends Record<string, any>
-  ? {
-      [K in keyof T & string]:
-        | `${P}.${K}`
-        | (NonNullable<T[K]> extends Record<string, any>
-            ? `${P}.${K}${JsonPathForObjectDot<NonNullable<T[K]>, ''>}`
-            : never)
-    }[keyof T & string]
-  : ''
+type JsonPathForObjectArrow<T, P extends string = ''> =
+  T extends Record<string, any>
+    ? {
+        [K in keyof T & string]:
+          | `${P}->${K}`
+          | `${P}->${K}-`
+          | `${P}->>${K}`
+          | `${P}->>${K}-`
+          | (NonNullable<T[K]> extends Record<string, any>
+              ? `${P}->${K}${JsonPathForObjectArrow<NonNullable<T[K]>, ''>}`
+              : never)
+      }[keyof T & string]
+    : ''
+type JsonPathForObjectDot<T, P extends string = ''> =
+  T extends Record<string, any>
+    ? {
+        [K in keyof T & string]:
+          | `${P}.${K}`
+          | (NonNullable<T[K]> extends Record<string, any>
+              ? `${P}.${K}${JsonPathForObjectDot<NonNullable<T[K]>, ''>}`
+              : never)
+      }[keyof T & string]
+    : ''
 type JsonPathCombinations<DB, T extends TableNames<DB>> = {
   [K in ColumnNames<DB, T>]: DB[T][K] extends object
     ?
@@ -122,7 +124,7 @@ type QueryExecutor<DB> = <
   paramsSchema?: TParamsSchema
   resultSchema?: TResultSchema
 }) => (
-  sqlOrBuilderFn: SqlOrBuilderFn<TResultSchema, ParamsType<TParams>, DB>
+  sqlOrBuilderFn: SqlOrBuilderFn<TResultSchema, ParamsType<TParams>, DB>,
 ) => Promise<QueryExecutorResult<TQueryResult, TParams, TResultSchema>>
 
 type QueryExecutorParams =
@@ -130,27 +132,22 @@ type QueryExecutorParams =
   | Record<string, any>[]
   | GeneratorFn<Record<string, any>>
   | AsyncGeneratorFn<Record<string, any>>
-type QueryExecutorOptionsParams<
-  TParams,
-  TParamsSchema extends StandardSchemaV1 | undefined,
-> = TParams extends AsyncGeneratorFn<infer P>
-  ? AsyncGeneratorFn<P>
-  : TParams extends GeneratorFn<infer P>
-    ? GeneratorFn<P>
-    : TParams extends Array<infer P>
-      ? P[]
-      : TParamsSchema extends StandardSchemaV1
-        ? StandardSchemaV1.InferOutput<TParamsSchema>
-        : TParams
+type QueryExecutorOptionsParams<TParams, TParamsSchema extends StandardSchemaV1 | undefined> =
+  TParams extends AsyncGeneratorFn<infer P>
+    ? AsyncGeneratorFn<P>
+    : TParams extends GeneratorFn<infer P>
+      ? GeneratorFn<P>
+      : TParams extends Array<infer P>
+        ? P[]
+        : TParamsSchema extends StandardSchemaV1
+          ? StandardSchemaV1.InferOutput<TParamsSchema>
+          : TParams
 
 // Conditional result type: AsyncGenerator for iterative params, SimpleResult otherwise.
-type QueryExecutorResult<
-  TQueryResult,
-  TParams,
-  TResultSchema extends StandardSchemaV1 | undefined,
-> = IsIterativeExecution<TParams> extends true
-  ? AsyncGenerator<SimpleQueryExecutorResult<TQueryResult, TResultSchema>, void, unknown>
-  : SimpleQueryExecutorResult<TQueryResult, TResultSchema>
+type QueryExecutorResult<TQueryResult, TParams, TResultSchema extends StandardSchemaV1 | undefined> =
+  IsIterativeExecution<TParams> extends true
+    ? AsyncGenerator<SimpleQueryExecutorResult<TQueryResult, TResultSchema>, void, unknown>
+    : SimpleQueryExecutorResult<TQueryResult, TResultSchema>
 
 // Iterative executor type - always returns Promise<AsyncGenerator>
 type IterativeQueryExecutor<DB> = <
@@ -163,7 +160,7 @@ type IterativeQueryExecutor<DB> = <
   paramsSchema?: TParamsSchema
   resultSchema?: TResultSchema
 }) => (
-  sqlOrBuilderFn: SqlOrBuilderFn<TResultSchema, TParams, DB>
+  sqlOrBuilderFn: SqlOrBuilderFn<TResultSchema, TParams, DB>,
 ) => Promise<AsyncGenerator<SimpleQueryExecutorResult<TQueryResult, TResultSchema>, void, unknown>>
 
 // --- Main Class ---
@@ -239,7 +236,7 @@ export class SchemQl<DB> {
   }
 
   private createIterativeExecutor = <TQueryResult>(
-    queryFn: IterativeQueryFn<TQueryResult>
+    queryFn: IterativeQueryFn<TQueryResult>,
   ): IterativeQueryExecutor<DB> => {
     return (options) => async (sqlOrBuilderFn) => {
       const sql = typeof sqlOrBuilderFn === 'function' ? sqlOrBuilderFn(this.createSqlHelper()) : sqlOrBuilderFn
@@ -304,7 +301,7 @@ export class SchemQl<DB> {
       TResultSchema extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<TResultSchema> : unknown,
       TParams,
       DB
-    >[]
+    >[],
   ): string => {
     return strings.reduce((acc, str, i) => {
       const value = values[i]
@@ -320,7 +317,7 @@ export class SchemQl<DB> {
       TResultSchema extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<TResultSchema> : unknown,
       TParams,
       DB
-    >
+    >,
   ): string => {
     if (typeof value === 'object') {
       const entries = Object.entries(value)
@@ -376,7 +373,7 @@ const stringifyObjectParams = (params: Record<string, any>): Record<string, any>
       acc[key] = value !== null && typeof value === 'object' ? JSON.stringify(value) : value
       return acc
     },
-    {} as Record<string, any>
+    {} as Record<string, any>,
   )
 
 const quotifyJsonPath = (jsonPath: string) =>
@@ -388,7 +385,7 @@ const quotifyJsonPath = (jsonPath: string) =>
 
 const standardValidate = async <Schema extends StandardSchemaV1>(
   schema: Schema,
-  input: StandardSchemaV1.InferInput<Schema>
+  input: StandardSchemaV1.InferInput<Schema>,
 ): Promise<StandardSchemaV1.InferOutput<Schema>> => {
   let result = schema['~standard'].validate(input)
   if (result instanceof Promise) {

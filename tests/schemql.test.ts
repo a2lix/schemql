@@ -2,8 +2,11 @@
 
 import assert from 'node:assert'
 import { describe, it } from 'node:test'
+
 import { z } from 'zod/v4'
-import { SchemQl, type SchemQlAdapter } from '@/index'
+
+import { SchemQl, type SchemQlAdapter } from '#index'
+
 import { type DB as DB_AT, tUserDb } from './schema_arktype'
 import { type DB, zSessionDb, zUserDb } from './schema_zod'
 
@@ -332,7 +335,7 @@ SELECT
 FROM users
 WHERE
   users.id = :id
-`
+`,
           )
           return (params?: any) => {
             assert.deepEqual(params, { id: 'uuid-1' })
@@ -364,7 +367,7 @@ SELECT
 FROM ${'@users'}
 WHERE
   ${'@users.id'} = ${':id'}
-`
+`,
     )
 
     assert.deepEqual(result, {
@@ -392,7 +395,7 @@ SELECT
 FROM users
 WHERE
   users.id = :id
-`
+`,
           )
           return (params?: any) => {
             assert.deepEqual(params, { id: 'uuid-1' })
@@ -417,7 +420,7 @@ SELECT
 FROM ${'@users'}
 WHERE
   ${'@users.id'} = ${':id'}
-`
+`,
     )
 
     assert.deepEqual(result, undefined)
@@ -441,10 +444,14 @@ VAlUES
     , json(:metadata)
   )
 RETURNING *
-`
+`,
           )
           return (params?: any) => {
-            assert.deepEqual(params, { id: 'uuid-3', email: 'joke@doe.com', metadata: '{"role":"admin"}' })
+            assert.deepEqual(params, {
+              id: 'uuid-3',
+              email: 'joke@doe.com',
+              metadata: '{"role":"admin"}',
+            })
             return {
               id: 'uuid-3',
               email: 'joke@doe.com',
@@ -477,7 +484,7 @@ VAlUES
     , json(${':metadata'})
   )
 RETURNING *
-`
+`,
     )
 
     assert.deepEqual(result, {
@@ -507,10 +514,14 @@ VAlUES
     , json(:metadata)
   )
 RETURNING *
-`
+`,
           )
           return (params?: any) => {
-            assert.deepEqual(params, { id: 'uuid-3', email: 'joke@doe.com', metadata: '{"role":"admin"}' })
+            assert.deepEqual(params, {
+              id: 'uuid-3',
+              email: 'joke@doe.com',
+              metadata: '{"role":"admin"}',
+            })
             return {
               id: 'uuid-3',
               email: 'joke@doe.com',
@@ -544,7 +555,7 @@ VAlUES
     , json(${':metadata'})
   )
 RETURNING *
-`
+`,
     )
 
     assert.deepEqual(result, {
@@ -574,7 +585,7 @@ SET
 WHERE
   users.metadata->'role' = :role
 RETURNING *
-`
+`,
           )
           return (params?: any) => {
             assert.deepEqual(params, {
@@ -601,7 +612,11 @@ RETURNING *
         emailVariant: 'jane+variant@doe.com',
         emailVerifiedAt: 1500000000,
       },
-      paramsSchema: z.object({ role: z.string(), emailVariant: z.string(), emailVerifiedAt: z.number().int() }),
+      paramsSchema: z.object({
+        role: z.string(),
+        emailVariant: z.string(),
+        emailVerifiedAt: z.number().int(),
+      }),
     })(
       (s) =>
         s.sql`
@@ -614,7 +629,7 @@ SET
 WHERE
   ${'@users.metadata ->role'} = ${':role'}
 RETURNING *
-`
+`,
     )
 
     assert.deepEqual(result, {
@@ -653,7 +668,7 @@ SELECT
   s.id AS session_id
 FROM _user_scope _us
 LEFT JOIN sessions s ON s.id = _us.id
-`)
+`),
           )
           return (params?: any) => {
             assert.deepEqual(params, {
@@ -684,9 +699,9 @@ _user_scope AS (
     true,
     s.sql`
     WHERE
-      ${'@users.id-'} ${s.sqlRaw(true ? '>' : '<')} ${':cursor'}
+      ${'@users.id-'} ${s.sqlRaw('>' as string)} ${':cursor'}
       ${s.sqlCond(true, s.sql`AND ${s.sqlCond(false, '1=1', '0=0')}`)}
-    `
+    `,
   )}
   ORDER BY ${'@users.id-'} ${s.sqlCond(false, 'DESC', 'ASC')}
   LIMIT ${':limit'}
@@ -697,7 +712,7 @@ SELECT
   s.${'@sessions.id-'} AS ${'$session_id'}
 FROM _user_scope _us
 LEFT JOIN ${'@sessions'} s ON s.${'@sessions.id-'} = _us.${'@users.id-'}
-`
+`,
     )
 
     assert.deepEqual(result, [])

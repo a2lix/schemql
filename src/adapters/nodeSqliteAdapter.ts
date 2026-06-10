@@ -1,12 +1,13 @@
 import type SQLite from 'node:sqlite'
-import { AdapterErrorCode, BaseAdapterError } from '@/adapters/baseAdapterError'
-import type { SchemQlAdapter } from '@/schemql'
+
+import { AdapterErrorCode, BaseAdapterError } from '#adapters/baseAdapterError'
+import type { SchemQlAdapter } from '#schemql'
 
 export class NodeSqliteAdapter<T = unknown> implements SchemQlAdapter<T> {
   public constructor(private db: SQLite.DatabaseSync) {}
 
   public queryAll = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
-    sql: string
+    sql: string,
   ) => {
     let stmt: SQLite.StatementSync
     try {
@@ -29,7 +30,7 @@ export class NodeSqliteAdapter<T = unknown> implements SchemQlAdapter<T> {
   }
 
   public queryFirst = <TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
-    sql: string
+    sql: string,
   ) => {
     let stmt: SQLite.StatementSync
     try {
@@ -55,7 +56,7 @@ export class NodeSqliteAdapter<T = unknown> implements SchemQlAdapter<T> {
     TResult,
     TParams extends Record<string, any> | undefined = Record<string, any> | undefined,
   >(
-    sql: string
+    sql: string,
   ) => {
     const prepareFirst = this.queryFirst<TResult, TParams>(sql)
 
@@ -69,7 +70,7 @@ export class NodeSqliteAdapter<T = unknown> implements SchemQlAdapter<T> {
   }
 
   public queryIterate = <_TResult, TParams extends Record<string, any> | undefined = Record<string, any> | undefined>(
-    sql: string
+    sql: string,
   ) => {
     const stmt = this.db.prepare(sql)
 
@@ -81,6 +82,7 @@ export class NodeSqliteAdapter<T = unknown> implements SchemQlAdapter<T> {
 
 export class SchemQlAdapterError extends BaseAdapterError {
   public static createFromNodeSqlite = (error: any) => {
+    // oxlint-disable-next-line unicorn/consistent-function-scoping
     const computeCode = ({ code, message }: { code: string; message: string }) => {
       if (code === 'ERR_SQLITE_ERROR') {
         if (message.startsWith('UNIQUE constraint failed')) {
